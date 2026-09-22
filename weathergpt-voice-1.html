@@ -1,0 +1,2734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WeatherGPT — Golaghat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#ffffff;
+    --bg-1:#f3f6fb;
+    --bg-2:#e9eff9;
+    --panel:#f7f9fc;
+    --panel-line:rgba(20,40,80,0.09);
+    --sky-a:#2e6feb;
+    --sky-b:#1a9cc2;
+    --amber:#e08e00;
+    --rain:#2f86d6;
+    --text-0:#16233d;
+    --text-1:#4c5b76;
+    --text-2:#6d7a92;
+    --danger:#e8483b;
+    --radius-l:22px;
+    --radius-m:14px;
+    --radius-s:9px;
+  }
+  :root{ box-sizing:border-box; padding-top:env(safe-area-inset-top, 0px); padding-bottom:env(safe-area-inset-bottom, 0px); }
+  html{ scroll-padding-top:env(safe-area-inset-top, 0px); }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Inter',sans-serif;
+    background: var(--bg-0);
+    color:var(--text-0);
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:calc(28px + env(safe-area-inset-top, 0px)) 14px calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+  .app{
+    width:100%;
+    max-width:460px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+
+  /* NAV */
+  .nav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:linear-gradient(135deg, var(--bg-2), var(--bg-1));
+    border:1px solid var(--panel-line);
+    border-radius:999px;
+    padding:10px 8px 10px 16px;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    letter-spacing:0.2px;
+  }
+  .brand .dot{
+    width:9px; height:9px; border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, #bfe6ff, var(--sky-b) 60%, var(--sky-a));
+    box-shadow:0 0 10px rgba(72,211,232,0.7);
+  }
+  .brand .gpt{ color:var(--sky-b); }
+  .navlinks{ display:flex; gap:2px; }
+  .navlinks button{
+    all:unset;
+    cursor:pointer;
+    font-size:11.5px;
+    font-weight:600;
+    color:var(--text-2);
+    padding:8px 10px;
+    border-radius:999px;
+    transition:background .2s, color .2s;
+  }
+  .navlinks button.active{ color:var(--bg-0); background:var(--text-0); }
+  .navlinks button:not(.active):hover{ color:var(--text-0); }
+
+  /* VIEWS */
+  .view{ display:none; flex-direction:column; gap:16px; }
+  .view.active{ display:flex; }
+
+  /* HERO */
+  .hero{
+    position:relative;
+    overflow:hidden;
+    border-radius:var(--radius-l);
+    border:1px solid var(--panel-line);
+    background:linear-gradient(160deg, #eaf3ff 0%, #e3edfb 55%, #eef2f9 100%);
+    padding:24px 22px 20px;
+  }
+  .hero::before{
+    content:"";
+    position:absolute; inset:0;
+    background:
+      radial-gradient(circle at 82% 18%, rgba(26,156,194,0.16), transparent 42%),
+      radial-gradient(circle at 105% 60%, rgba(46,111,235,0.14), transparent 50%);
+    pointer-events:none;
+  }
+  .hero-top{
+    position:relative;
+    display:flex; justify-content:space-between; align-items:flex-start;
+  }
+  .hero-date{ font-size:12px; color:var(--text-2); font-weight:600; letter-spacing:.3px; }
+  .hero-loc{
+    display:flex; align-items:center; gap:5px;
+    font-size:13px; color:var(--text-1); font-weight:600; margin-top:4px;
+  }
+  .refresh-btn{
+    all:unset; cursor:pointer;
+    width:32px; height:32px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(20,40,80,0.06);
+    border:1px solid var(--panel-line);
+    color:var(--text-1);
+  }
+  .refresh-btn svg{ width:15px; height:15px; transition:transform .5s; }
+  .refresh-btn.spin svg{ transform:rotate(360deg); }
+
+  .hero-main{
+    position:relative;
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top:14px;
+  }
+  .temp-block .temp{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:68px; font-weight:600; line-height:1;
+    letter-spacing:-2px;
+  }
+  .temp-block .cond{
+    font-size:15px; color:var(--text-1); font-weight:500; margin-top:6px;
+  }
+  .temp-block .feels{
+    font-size:12px; color:var(--text-2); margin-top:3px;
+  }
+  .hero-icon{ width:86px; height:86px; }
+
+  .hero-strip{
+    position:relative;
+    display:flex; justify-content:space-between;
+    margin-top:20px; padding-top:14px;
+    border-top:1px solid var(--panel-line);
+  }
+  .hero-strip .item{ text-align:center; }
+  .hero-strip .item .label{ font-size:9.5px; color:var(--text-2); text-transform:uppercase; letter-spacing:.6px; font-weight:600; }
+  .hero-strip .item .val{ font-size:13px; color:var(--text-0); font-weight:600; margin-top:5px; }
+
+  /* SECTION HEADERS */
+  .sec-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    padding:0 2px;
+  }
+  .sec-head h2{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:14.5px; font-weight:600; color:var(--text-0);
+  }
+  .sec-head .more{ font-size:11.5px; color:var(--sky-b); font-weight:600; cursor:pointer; }
+
+  /* HOURLY */
+  .hourly-scroll{
+    display:flex; gap:10px; overflow-x:auto; padding:4px 2px 6px;
+    scrollbar-width:none;
+  }
+  .hourly-scroll::-webkit-scrollbar{ display:none; }
+  .hcard{
+    flex:0 0 auto;
+    width:60px;
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-m);
+    padding:12px 0 10px;
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+  }
+  .hcard.now{ border-color:rgba(72,211,232,0.5); background:linear-gradient(180deg, rgba(46,111,235,0.18), var(--panel)); }
+  .hcard .t{ font-size:10.5px; color:var(--text-2); font-weight:600; }
+  .hcard.now .t{ color:var(--sky-b); }
+  .hcard svg{ width:22px; height:22px; }
+  .hcard .v{ font-size:13px; font-weight:600; }
+  .hcard .p{ font-size:9px; color:var(--rain); font-weight:600; }
+
+  /* DETAILS GRID */
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .dcard{
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-m);
+    padding:14px 14px 12px;
+    position:relative;
+    overflow:hidden;
+  }
+  .dcard .dc-top{ display:flex; align-items:center; gap:7px; }
+  .dcard .dc-top svg{ width:15px; height:15px; color:var(--sky-b); }
+  .dcard .dc-label{ font-size:10.5px; color:var(--text-2); font-weight:600; letter-spacing:.3px; text-transform:uppercase; }
+  .dcard .dc-val{ font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:600; margin-top:10px; }
+  .dcard .dc-sub{ font-size:11px; color:var(--text-2); margin-top:3px; }
+  .bar-track{ height:5px; border-radius:4px; background:rgba(20,40,80,0.08); margin-top:10px; overflow:hidden;}
+  .bar-fill{ height:100%; border-radius:4px; }
+  .uv-scale{ display:flex; gap:2px; margin-top:10px; }
+  .uv-scale span{ flex:1; height:5px; border-radius:3px; background:rgba(20,40,80,0.09); }
+  .uv-scale span.on{ background:var(--amber); }
+  .compass{ width:46px; height:46px; margin-top:6px; }
+
+  /* ASSAM REGIONAL MAP */
+  .region-map{
+    border-radius:var(--radius-m);
+    overflow:hidden;
+    border:1px solid var(--panel-line);
+    background:var(--panel);
+  }
+  .region-map img{ display:block; width:100%; height:auto; }
+  .region-map .rm-cap{ font-size:11px; color:var(--text-2); padding:8px 12px 10px; }
+  .region-map .rm-wrap{ position:relative; line-height:0; }
+  .region-map .zone{
+    position:absolute; width:16px; height:16px; margin:-8px 0 0 -8px;
+    border-radius:50%; border:2px solid rgba(255,255,255,0.9);
+    box-shadow:0 0 0 3px rgba(0,0,0,0.12);
+  }
+  .region-map .zone::after{
+    content:''; position:absolute; inset:-6px; border-radius:50%;
+    border:2px solid currentColor; opacity:.55; animation:zonePulse 2.2s ease-out infinite;
+  }
+  .region-map .zone.severe{ background:#ff6a5f; color:#ff6a5f; }
+  .region-map .zone.watch{ background:#f5a623; color:#f5a623; }
+  .region-map .zone.normal{ background:#48d3e8; color:#48d3e8; }
+  .region-map .zone.safe{ background:#54e6a4; color:#54e6a4; }
+  @keyframes zonePulse{ 0%{ transform:scale(.6); opacity:.7; } 100%{ transform:scale(1.6); opacity:0; } }
+  .region-map .zone-legend{ display:flex; flex-wrap:wrap; gap:10px 14px; padding:10px 12px 12px; font-size:10.5px; color:var(--text-2); }
+  .region-map .zone-legend span{ display:inline-flex; align-items:center; gap:5px; }
+  .region-map .zone-legend i{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+
+  .hist-toggle{ display:flex; gap:6px; margin:2px 0 12px; }
+  .hist-toggle button{
+    all:unset; cursor:pointer; flex:1; text-align:center; font-size:11.5px; font-weight:600;
+    padding:8px 0; border-radius:10px; background:rgba(20,40,80,0.05); color:var(--text-1);
+  }
+  .hist-toggle button.active{ background:var(--sky-b); color:#03101f; }
+  .hist-chart-wrap{ background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius-m); padding:14px 12px 8px; }
+  .hist-empty{ font-size:11.5px; color:var(--text-2); padding:20px 4px; text-align:center; }
+  .hist-legend{ display:flex; gap:14px; font-size:10.5px; color:var(--text-2); padding:8px 4px 2px; }
+  .hist-legend span{ display:inline-flex; align-items:center; gap:5px; }
+  .hist-legend i{ width:10px; height:3px; border-radius:2px; display:inline-block; }
+
+  /* 7 DAY */
+  .daylist{
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-m);
+    overflow:hidden;
+  }
+  .drow{
+    display:grid; grid-template-columns:64px 1fr auto 74px;
+    align-items:center; gap:10px;
+    padding:12px 14px;
+    border-bottom:1px solid var(--panel-line);
+  }
+  .drow:last-child{ border-bottom:none; }
+  .drow .dname{ font-size:13px; font-weight:600; }
+  .drow .dname.today{ color:var(--sky-b); }
+  .drow svg{ width:20px; height:20px; justify-self:center; }
+  .drow .rain{ font-size:10.5px; color:var(--rain); font-weight:600; }
+  .drow .range{ display:flex; align-items:center; gap:6px; justify-self:end; }
+  .drow .lo{ font-size:12px; color:var(--text-2); width:22px; text-align:right; }
+  .drow .hi{ font-size:12px; font-weight:700; width:22px; }
+  .range-track{ width:34px; height:4px; border-radius:3px; background:rgba(20,40,80,0.1); position:relative; overflow:hidden; }
+  .range-fill{ position:absolute; top:0; bottom:0; border-radius:3px; background:linear-gradient(90deg, var(--sky-b), var(--amber)); }
+
+  /* ALERT BANNER */
+  .alert-banner{
+    display:flex; gap:10px; align-items:flex-start;
+    background:linear-gradient(135deg, rgba(255,106,95,0.16), rgba(255,106,95,0.04));
+    border:1px solid rgba(255,106,95,0.35);
+    border-radius:var(--radius-m);
+    padding:13px 14px;
+  }
+  .alert-banner svg{ width:18px; height:18px; color:var(--danger); flex:0 0 auto; margin-top:1px; }
+  .alert-banner .at{ font-size:12.5px; font-weight:700; color:#b3261a; }
+  .alert-banner .ad{ font-size:11.5px; color:var(--text-1); margin-top:3px; line-height:1.4; }
+
+  /* EMERGENCY SIREN BAR (sticky, top of app) */
+  #emergencyBar{
+    display:none;
+    position:sticky; top:0; z-index:50;
+    background:linear-gradient(135deg,#ff3b30,#b3160e);
+    border-radius:var(--radius-m);
+    padding:14px 14px;
+    box-shadow:0 8px 24px rgba(255,59,48,0.35);
+    animation:siren-flash 1.1s ease-in-out infinite;
+  }
+  #emergencyBar.show{ display:block; }
+  @keyframes siren-flash{
+    0%,100%{ box-shadow:0 8px 24px rgba(255,59,48,0.35); }
+    50%{ box-shadow:0 8px 34px rgba(255,59,48,0.85); }
+  }
+  .eb-top{ display:flex; align-items:center; gap:9px; }
+  .eb-top svg{ width:20px; height:20px; color:#fff; flex:0 0 auto; }
+  .eb-title{ font-size:13px; font-weight:800; color:#fff; letter-spacing:.2px; }
+  .eb-sub{ font-size:11.5px; color:#ffe1de; margin-top:2px; }
+  .eb-actions{ display:flex; gap:8px; margin-top:12px; }
+  .eb-btn{ all:unset; cursor:pointer; flex:1; text-align:center; font-size:12px; font-weight:700; padding:10px 0; border-radius:10px; }
+  .eb-call{ background:#fff; color:#b3160e; display:flex; align-items:center; justify-content:center; gap:6px; }
+  .eb-call svg{ width:14px; height:14px; color:#b3160e; }
+  .eb-mute{ background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.35); }
+  .eb-note{ font-size:9.5px; color:#ffd6d2; margin-top:9px; line-height:1.4; }
+
+  /* HAZARD / RED ZONE MAP */
+  .hazard-card{ background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius-m); padding:14px; }
+  .hazard-map{ position:relative; width:100%; height:150px; border-radius:var(--radius-s); overflow:hidden; background:radial-gradient(circle at 50% 50%, #12213f, #060d1c 75%); margin-top:10px; border:1px solid var(--panel-line); }
+  .hazard-map svg{ width:100%; height:100%; }
+  .hz-ring{ fill:none; stroke:var(--panel-line); }
+  .hz-zone{ opacity:.55; }
+  .hz-dot{ }
+  .hazard-legend{ display:flex; gap:14px; margin-top:10px; flex-wrap:wrap; }
+  .hazard-legend div{ display:flex; align-items:center; gap:6px; font-size:10.5px; color:var(--text-2); font-weight:600; }
+  .hazard-legend span{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .hazard-list{ margin-top:12px; display:flex; flex-direction:column; gap:8px; }
+  .hz-row{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; background:rgba(20,40,80,0.05); }
+  .hz-badge{ width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
+  .hz-row .hzn{ font-size:12px; font-weight:600; flex:1; }
+  .hz-row .hzd{ font-size:11px; color:var(--text-2); }
+
+  /* ESCAPE DIRECTION */
+  .escape-card{ margin-top:12px; background:rgba(84,230,164,0.08); border:1px solid rgba(84,230,164,0.3); border-radius:12px; padding:12px 13px; }
+  .escape-top{ display:flex; gap:10px; align-items:flex-start; }
+  .escape-top svg{ width:18px; height:18px; flex:0 0 auto; margin-top:1px; }
+  .escape-t{ font-size:12.5px; font-weight:700; color:var(--text-0); }
+  .escape-t b{ color:#54e6a4; }
+  .escape-s{ font-size:11.5px; color:var(--text-1); margin-top:3px; line-height:1.4; }
+  .escape-note{ font-size:9.5px; color:var(--text-2); margin-top:9px; line-height:1.4; }
+
+  /* COMMENTS */
+  .comment-card{ background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius-m); padding:14px; }
+  .comment-form{ display:flex; gap:8px; }
+  .comment-form input{ flex:1; background:rgba(20,40,80,0.05); border:1px solid var(--panel-line); border-radius:999px; padding:10px 14px; color:var(--text-0); font-size:12.5px; font-family:inherit; outline:none; }
+  .comment-form input::placeholder{ color:var(--text-2); }
+  .comment-form button{ all:unset; cursor:pointer; padding:0 16px; border-radius:999px; background:linear-gradient(135deg, var(--sky-b), var(--sky-a)); color:#03101f; font-size:12px; font-weight:700; display:flex; align-items:center; }
+  .comment-list{ display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+  .comment{ display:flex; gap:10px; }
+  .comment .cav{ width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg, var(--sky-a), var(--sky-b)); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:#03101f; flex:0 0 auto; }
+  .comment .cbody{ flex:1; background:rgba(20,40,80,0.05); border-radius:12px; border-top-left-radius:4px; padding:8px 12px; }
+  .comment .cname{ font-size:11.5px; font-weight:700; color:var(--text-0); }
+  .comment .ctime{ font-size:9.5px; color:var(--text-2); font-weight:600; margin-left:6px; }
+  .comment .ctext{ font-size:12px; color:var(--text-1); margin-top:3px; line-height:1.4; }
+  .comment-empty{ font-size:11.5px; color:var(--text-2); text-align:center; padding:14px 0; }
+  .comment-form button#commentPhotoBtn{ background:rgba(20,40,80,0.06); color:var(--text-1); padding:0 12px; font-size:14px; }
+  .comment-photo-preview{ position:relative; display:inline-flex; margin-top:10px; }
+  .comment-photo-preview img{ width:64px; height:64px; object-fit:cover; border-radius:10px; border:1px solid var(--panel-line); }
+  .comment-photo-preview button{ all:unset; cursor:pointer; position:absolute; top:-6px; right:-6px; width:18px; height:18px; border-radius:50%; background:var(--danger); color:#fff; font-size:10px; line-height:18px; text-align:center; }
+  .comment .cphoto{ margin-top:7px; width:100%; max-width:230px; max-height:170px; object-fit:cover; border-radius:10px; display:block; border:1px solid var(--panel-line); cursor:pointer; }
+  .photo-lightbox{ position:fixed; inset:0; background:rgba(3,10,20,0.9); z-index:999; display:none; align-items:center; justify-content:center; padding:28px; }
+  .photo-lightbox img{ max-width:100%; max-height:100%; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.5); }
+
+  /* ONLINE COUNTER */
+  .online-pill{ display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; color:var(--text-1); background:rgba(84,230,164,0.1); border:1px solid rgba(84,230,164,0.3); padding:5px 10px; border-radius:999px; }
+  .online-pill .pulse{ width:6px; height:6px; border-radius:50%; background:#54e6a4; box-shadow:0 0 6px #54e6a4; animation:pulse-dot 1.4s ease-in-out infinite; }
+  @keyframes pulse-dot{ 0%,100%{ opacity:1;} 50%{ opacity:.35;} }
+
+  /* SAFETY CHECK-IN BOARD */
+  .status-card{ background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius-m); padding:14px; }
+  .status-stats{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:10px; }
+  .stat-box{ background:rgba(20,40,80,0.05); border-radius:10px; padding:10px 6px; text-align:center; }
+  .stat-box .sv{ font-family:'Space Grotesk',sans-serif; font-size:19px; font-weight:700; }
+  .stat-box .sl{ font-size:9px; color:var(--text-2); font-weight:600; margin-top:2px; text-transform:uppercase; letter-spacing:.3px; }
+  .stat-box.safe .sv{ color:#54e6a4; }
+  .stat-box.help .sv{ color:var(--danger); }
+  .stat-box.wait .sv{ color:var(--text-2); }
+  .checkin-actions{ display:flex; gap:8px; margin-top:12px; }
+  .checkin-actions button{ all:unset; cursor:pointer; flex:1; text-align:center; font-size:11.5px; font-weight:700; padding:10px 0; border-radius:10px; }
+  .btn-safe{ background:rgba(84,230,164,0.18); color:#54e6a4; border:1px solid rgba(84,230,164,0.5); box-shadow:0 0 0 rgba(84,230,164,0); transition:box-shadow .2s; }
+  .btn-safe:hover{ box-shadow:0 0 12px rgba(84,230,164,0.35); }
+  .btn-help{ background:rgba(255,106,95,0.18); color:var(--danger); border:1px solid rgba(255,106,95,0.5); box-shadow:0 0 0 rgba(255,106,95,0); transition:box-shadow .2s; }
+  .btn-help:hover{ box-shadow:0 0 12px rgba(255,106,95,0.35); }
+  .status-list{ margin-top:12px; display:flex; flex-direction:column; gap:8px; }
+  .status-row{ display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; background:rgba(20,40,80,0.05); }
+  .status-row .sdot{ width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
+  .status-row .sname{ font-size:12px; font-weight:600; flex:1; }
+  .status-row .sloc{ font-size:10px; color:var(--text-2); display:block; margin-top:1px; }
+  .status-row .stag{ font-size:9.5px; font-weight:700; padding:3px 8px; border-radius:999px; }
+  .tag-safe{ background:rgba(84,230,164,0.15); color:#54e6a4; }
+  .tag-help{ background:rgba(255,106,95,0.15); color:var(--danger); }
+  .tag-wait{ background:rgba(20,40,80,0.08); color:var(--text-2); }
+  .status-note{ font-size:9.5px; color:var(--text-2); margin-top:11px; line-height:1.4; }
+
+  /* FORECAST OUTLOOK CARD */
+  .outlook-card{ background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius-m); padding:14px; }
+  .outlook-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+  .outlook-item{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .o-ring{ width:74px; height:74px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .o-inner{ width:58px; height:58px; border-radius:50%; background:var(--panel); display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; }
+  .o-label{ font-size:10.5px; color:var(--text-2); font-weight:600; text-align:center; }
+  .eta-box{ display:flex; gap:10px; align-items:flex-start; margin-top:14px; background:rgba(72,211,232,0.08); border:1px solid rgba(72,211,232,0.25); border-radius:12px; padding:11px 12px; }
+  .eta-box svg{ width:18px; height:18px; flex:0 0 auto; margin-top:1px; }
+  .eta-t{ font-size:12.5px; font-weight:700; color:var(--text-0); }
+  .eta-t b{ color:var(--sky-b); }
+  .eta-s{ font-size:11px; color:var(--text-1); margin-top:3px; line-height:1.4; }
+  .outlook-note{ font-size:9.5px; color:var(--text-2); margin-top:11px; line-height:1.4; }
+
+  /* FULL ASSAM WEATHER MAP */
+  .assam-card{ background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius-m); padding:14px; }
+  .assam-map{ position:relative; width:100%; height:190px; border-radius:var(--radius-s); overflow:hidden; background:radial-gradient(circle at 50% 40%, #12213f, #060d1c 78%); margin-top:10px; border:1px solid var(--panel-line); }
+  .assam-map svg{ width:100%; height:100%; }
+  .cond-legend{ display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
+  .cond-legend div{ display:flex; align-items:center; gap:5px; font-size:9.5px; color:var(--text-2); font-weight:600; }
+  .cond-legend span{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+  .district-grid{ display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:12px; }
+  .dchip{ display:flex; align-items:center; gap:7px; padding:8px 9px; border-radius:9px; background:rgba(20,40,80,0.05); }
+  .dchip .ddot{ width:7px; height:7px; border-radius:50%; flex:0 0 auto; }
+  .dchip .dinfo .dn{ font-size:10.5px; font-weight:700; color:var(--text-0); display:block; }
+  .dchip .dinfo .dc{ font-size:9px; color:var(--text-2); }
+
+  /* SUN ARC */
+  .sun-card{
+    background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius-m);
+    padding:16px 16px 12px;
+  }
+  .sun-row{ display:flex; justify-content:space-between; font-size:11px; color:var(--text-2); font-weight:600; margin-top:6px;}
+  .sun-row b{ color:var(--text-0); font-size:12.5px; }
+
+  /* AQI STRIP */
+  .aqi-card{ display:flex; align-items:center; gap:14px; background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius-m); padding:14px; }
+  .aqi-ring{ width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:16px; flex:0 0 auto; }
+  .aqi-text .aqi-t1{ font-size:13px; font-weight:700; }
+  .aqi-text .aqi-t2{ font-size:11px; color:var(--text-2); margin-top:2px; }
+
+  /* CHAT */
+  .chat-shell{
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-m);
+    display:flex; flex-direction:column;
+    height:300px;
+    overflow:hidden;
+  }
+  .chat-head{
+    display:flex; align-items:center; gap:8px;
+    padding:12px 14px; border-bottom:1px solid var(--panel-line);
+    font-size:12px; font-weight:600; color:var(--text-1);
+  }
+  .chat-head .pulse{ width:7px; height:7px; border-radius:50%; background:#54e6a4; box-shadow:0 0 6px #54e6a4; }
+  .chat-log{ flex:1; overflow-y:auto; padding:12px 14px; display:flex; flex-direction:column; gap:10px; }
+  .msg{ max-width:82%; font-size:12.5px; line-height:1.45; padding:9px 12px; border-radius:14px; }
+  .msg.user{ align-self:flex-end; background:linear-gradient(135deg, var(--sky-a), #1c4fc0); border-bottom-right-radius:4px; }
+  .msg.bot{ align-self:flex-start; background:rgba(20,40,80,0.06); border:1px solid var(--panel-line); border-bottom-left-radius:4px; color:var(--text-1); }
+  .chat-input{ display:flex; gap:8px; padding:10px; border-top:1px solid var(--panel-line); }
+  .chat-input input{
+    flex:1; background:rgba(20,40,80,0.05); border:1px solid var(--panel-line);
+    border-radius:999px; padding:10px 14px; color:var(--text-0); font-size:12.5px; font-family:inherit; outline:none;
+  }
+  .chat-input input::placeholder{ color:var(--text-2); }
+  .chat-input button{
+    all:unset; cursor:pointer; width:38px; height:38px; border-radius:50%;
+    background:linear-gradient(135deg, var(--sky-b), var(--sky-a));
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto;
+  }
+  .chat-input button svg{ width:16px; height:16px; }
+  .chip-row{ display:flex; gap:6px; padding:0 12px 10px; flex-wrap:wrap; }
+  .chip{ all:unset; cursor:pointer; font-size:10.5px; padding:6px 10px; border-radius:999px; background:rgba(72,211,232,0.1); color:var(--sky-b); border:1px solid rgba(72,211,232,0.25); font-weight:600; }
+
+  /* VOICE COMMAND */
+  .voice-fab{
+    position:fixed; right:20px; bottom:22px; z-index:400;
+    width:56px; height:56px; border-radius:50%;
+    border:none; cursor:pointer;
+    background:linear-gradient(135deg, var(--sky-b), var(--sky-a));
+    box-shadow:0 8px 22px rgba(46,111,235,0.38), 0 0 0 1px rgba(255,255,255,0.4) inset;
+    display:none; align-items:center; justify-content:center;
+    transition:transform .18s ease;
+  }
+  .voice-fab:active{ transform:scale(0.94); }
+  .voice-fab svg{ width:24px; height:24px; }
+  .voice-fab .voice-ring{
+    position:absolute; inset:-6px; border-radius:50%;
+    border:2px solid var(--sky-b); opacity:0; pointer-events:none;
+  }
+  .voice-fab.listening{ background:linear-gradient(135deg, var(--danger), #c0392b); }
+  .voice-fab.listening .voice-ring{
+    opacity:1; animation:voicePulse 1.4s ease-out infinite;
+  }
+  @keyframes voicePulse{
+    0%{ transform:scale(1); opacity:.7; }
+    100%{ transform:scale(1.55); opacity:0; }
+  }
+  .voice-fab.woke{ animation: wakeFlash .6s ease; }
+  @keyframes wakeFlash{
+    0%{ box-shadow:0 8px 22px rgba(46,111,235,0.38), 0 0 0 1px rgba(255,255,255,0.4) inset; }
+    40%{ box-shadow:0 0 0 10px rgba(84,230,164,0.35), 0 0 0 1px rgba(255,255,255,0.4) inset; }
+    100%{ box-shadow:0 8px 22px rgba(46,111,235,0.38), 0 0 0 1px rgba(255,255,255,0.4) inset; }
+  }
+  .wake-toggle{
+    position:fixed; right:20px; bottom:86px; z-index:400;
+    display:none; align-items:center; gap:6px;
+    padding:7px 12px 7px 10px; border-radius:999px;
+    background:rgba(20,40,80,0.06);
+    border:1px solid var(--panel-line);
+    cursor:pointer; font-size:10.5px; font-weight:600; color:var(--text-2);
+    transition:background .2s, color .2s, border-color .2s;
+  }
+  .wake-toggle .dot{ width:7px; height:7px; border-radius:50%; background:var(--text-2); flex:0 0 auto; transition:background .2s, box-shadow .2s; }
+  .wake-toggle.on{ color:var(--sky-b); border-color:rgba(72,211,232,0.35); background:rgba(46,111,235,0.08); }
+  .wake-toggle.on .dot{ background:#54e6a4; box-shadow:0 0 6px #54e6a4; }
+  .voice-panel{
+    position:fixed; right:20px; bottom:88px; z-index:400;
+    max-width:min(300px, calc(100vw - 40px));
+    background:var(--bg-0); border:1px solid var(--panel-line);
+    border-radius:var(--radius-m); box-shadow:0 12px 30px rgba(20,40,80,0.18);
+    padding:12px 14px; font-size:12px; color:var(--text-1);
+    display:none; flex-direction:column; gap:6px;
+  }
+  .voice-panel.show{ display:flex; }
+  .voice-panel .vp-status{ font-weight:700; color:var(--text-0); font-size:11.5px; display:flex; align-items:center; gap:6px; }
+  .voice-panel .vp-status .vdot{ width:7px; height:7px; border-radius:50%; background:var(--danger); box-shadow:0 0 6px var(--danger); }
+  .voice-panel .vp-transcript{ min-height:16px; color:var(--text-1); }
+  .voice-panel .vp-hint{ font-size:10.5px; color:var(--text-2); line-height:1.4; }
+  .voice-panel .vp-close{ all:unset; cursor:pointer; align-self:flex-end; font-size:10.5px; color:var(--sky-b); font-weight:600; }
+
+  /* FORECAST VIEW extras */
+  .toggle-row{ display:flex; background:var(--panel); border:1px solid var(--panel-line); border-radius:999px; padding:4px; }
+  .toggle-row button{ all:unset; flex:1; text-align:center; cursor:pointer; font-size:12px; font-weight:600; color:var(--text-2); padding:8px 0; border-radius:999px; }
+  .toggle-row button.on{ background:var(--sky-a); color:#fff; }
+
+  /* CLIMATE view */
+  .month-bars{ display:flex; align-items:flex-end; gap:6px; height:120px; background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius-m); padding:14px; }
+  .month-bars .mb{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:6px; height:100%; }
+  .month-bars .mb .stack{ width:60%; border-radius:5px 5px 0 0; background:linear-gradient(180deg, var(--amber), var(--sky-a)); }
+  .month-bars .mb .ml{ font-size:8.5px; color:var(--text-2); font-weight:600; }
+
+  .about-card{ background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius-m); padding:18px; font-size:12.5px; color:var(--text-1); line-height:1.6; }
+
+  /* PERSONA */
+  .persona-card{ background:var(--panel); border:1px solid var(--panel-line); border-radius:var(--radius-m); padding:14px; }
+  .persona-sub{ font-size:11.5px; color:var(--text-2); margin-top:4px; }
+  .persona-tabs{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .persona-btn{
+    all:unset; cursor:pointer; box-sizing:border-box;
+    font-size:12px; font-weight:600; color:var(--text-1);
+    padding:9px 14px; border-radius:999px;
+    background:var(--bg-0); border:1px solid var(--panel-line);
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .persona-btn:hover{ border-color:rgba(46,111,235,0.35); }
+  .persona-btn.active{ color:var(--bg-0); background:var(--sky-a); border-color:var(--sky-a); }
+  .persona-insight{
+    margin-top:14px; padding:14px 14px 12px;
+    background:var(--bg-0); border:1px solid var(--panel-line); border-left:3px solid var(--sky-a);
+    border-radius:var(--radius-s);
+  }
+  .persona-insight .pi-head{ font-size:12.5px; font-weight:700; color:var(--sky-a); }
+  .persona-insight .pi-verdict{ display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; margin-top:8px; }
+  .persona-insight .pi-verdict.ok{ color:#1a8f5e; background:rgba(26,143,94,0.12); }
+  .persona-insight .pi-verdict.caution{ color:#c77600; background:rgba(224,142,0,0.12); }
+  .persona-insight .pi-verdict.bad{ color:var(--danger); background:rgba(232,72,59,0.12); }
+  .persona-insight .pi-reasons{ margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+  .persona-insight .pi-row{ display:flex; align-items:flex-start; gap:9px; }
+  .persona-insight .pi-row svg{ width:16px; height:16px; flex:0 0 auto; margin-top:1px; color:var(--sky-b); }
+  .persona-insight .pi-row .pi-t{ font-size:12px; color:var(--text-0); line-height:1.45; }
+  .persona-insight .pi-row .pi-t b{ font-weight:700; }
+  .about-card h3{ font-family:'Space Grotesk',sans-serif; color:var(--text-0); font-size:15px; margin-bottom:8px; }
+  .credit-row{ display:flex; gap:10px; margin-top:14px; }
+  .credit-row div{ flex:1; background:rgba(20,40,80,0.05); border-radius:10px; padding:10px; text-align:center; }
+  .credit-row .cv{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:16px; color:var(--sky-b); }
+  .credit-row .cl{ font-size:9.5px; color:var(--text-2); margin-top:3px; }
+
+  footer{ text-align:center; font-size:10.5px; color:var(--text-2); padding-top:4px; }
+  .build-tag{ display:block; font-size:9px; color:var(--sky-b); margin-top:4px; opacity:.7; }
+
+  /* LOCATION SEARCH */
+  button.hero-loc{ all:unset; cursor:pointer; display:flex; align-items:center; gap:5px; font-size:13px; color:var(--text-1); font-weight:600; margin-top:4px; }
+  .loc-panel{ position:relative; margin-top:12px; background:rgba(20,40,80,0.05); border:1px solid var(--panel-line); border-radius:var(--radius-m); padding:10px; }
+  .loc-search-row{ display:flex; gap:8px; }
+  .loc-search-row input{ flex:1; background:rgba(20,40,80,0.06); border:1px solid var(--panel-line); border-radius:999px; padding:8px 14px; color:var(--text-0); font-size:12.5px; font-family:inherit; }
+  .loc-search-row input::placeholder{ color:var(--text-2); }
+  .loc-search-row button{ all:unset; cursor:pointer; width:34px; height:34px; border-radius:50%; background:var(--sky-a); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+  .loc-results{ margin-top:8px; display:flex; flex-direction:column; gap:4px; max-height:160px; overflow-y:auto; }
+  .loc-result{ all:unset; display:block; cursor:pointer; padding:8px 10px; border-radius:var(--radius-s); font-size:12.5px; color:var(--text-1); }
+  .loc-result:hover{ background:rgba(20,40,80,0.06); color:var(--text-0); }
+  .loc-note{ margin-top:8px; font-size:10.5px; color:var(--text-2); line-height:1.4; }
+
+  /* SHARE ROW */
+  .share-row{ display:flex; gap:8px; margin-top:10px; }
+  .share-btn{ all:unset; cursor:pointer; flex:1; text-align:center; padding:9px; border-radius:999px; font-size:11.5px; font-weight:700; background:rgba(20,40,80,0.06); border:1px solid var(--panel-line); color:var(--text-1); }
+  .share-btn:hover{ color:var(--text-0); }
+
+  /* NOTIFICATIONS */
+  .notif-btn{ all:unset; cursor:pointer; padding:8px 14px; border-radius:999px; background:rgba(20,40,80,0.06); border:1px solid var(--panel-line); color:var(--text-1); font-size:11.5px; font-weight:700; white-space:nowrap; }
+  .notif-btn.on{ background:var(--sky-a); color:#fff; border-color:transparent; }
+
+  /* ===== LOGIN SCREEN ===== */
+  #loginScreen{
+    position:fixed; inset:0; z-index:1000;
+    background:linear-gradient(160deg, #eaf3ff 0%, #e3edfb 55%, #eef2f9 100%);
+    display:flex; align-items:center; justify-content:center;
+    padding:24px 16px; overflow-y:auto;
+  }
+  #loginScreen.hidden{ display:none; }
+  .login-card{
+    width:100%; max-width:380px;
+    background:var(--bg-0);
+    border:1px solid var(--panel-line);
+    border-radius:var(--radius-l);
+    padding:28px 24px 24px;
+    box-shadow:0 20px 60px rgba(20,40,80,0.14);
+  }
+  .login-brand{ display:flex; align-items:center; justify-content:center; gap:8px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px; }
+  .login-brand .dot{ width:11px; height:11px; border-radius:50%; background:radial-gradient(circle at 30% 30%, #bfe6ff, var(--sky-b) 60%, var(--sky-a)); box-shadow:0 0 10px rgba(72,211,232,0.7); }
+  .login-brand .gpt{ color:var(--sky-b); }
+  .login-sub{ text-align:center; font-size:12px; color:var(--text-2); margin-top:4px; margin-bottom:20px; }
+  .login-lang{ margin-bottom:18px; }
+  .login-field{ margin-bottom:14px; }
+  .login-lang label, .login-field label{ font-size:10.5px; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:.4px; display:block; margin-bottom:6px; }
+  .lang-select{
+    width:100%; padding:11px 12px; border-radius:var(--radius-m); border:1px solid var(--panel-line);
+    background:var(--panel); color:var(--text-0); font-family:inherit; font-size:13px; font-weight:600; outline:none; cursor:pointer;
+  }
+  .login-field input{
+    width:100%; padding:12px 14px; border-radius:var(--radius-m); border:1px solid var(--panel-line);
+    background:var(--panel); color:var(--text-0); font-family:inherit; font-size:14px; outline:none;
+  }
+  .login-field input:focus{ border-color:var(--sky-b); }
+  .login-error{ font-size:11.5px; color:var(--danger); font-weight:600; margin:-4px 0 12px; display:none; }
+  .login-error.show{ display:block; }
+  .login-btn{
+    all:unset; box-sizing:border-box; width:100%; text-align:center; cursor:pointer; padding:13px 0; border-radius:999px;
+    background:linear-gradient(135deg, var(--sky-b), var(--sky-a)); color:#03101f; font-weight:700; font-size:13.5px; margin-top:4px;
+  }
+  .login-switch{ text-align:center; font-size:12px; color:var(--text-2); margin-top:16px; }
+  .login-switch button{ all:unset; cursor:pointer; color:var(--sky-b); font-weight:700; }
+  .login-guest{ text-align:center; margin-top:10px; }
+  .login-guest button{ all:unset; cursor:pointer; font-size:11.5px; color:var(--text-2); font-weight:600; text-decoration:underline; }
+
+  /* ===== TOP TOOLBAR (post-login) ===== */
+  .top-toolbar{ display:flex; align-items:center; gap:8px; }
+  .toolbar-user{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-1); font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .toolbar-lang{ flex:0 0 auto; }
+  .toolbar-lang select.lang-select{ padding:8px 10px; font-size:11px; border-radius:999px; width:auto; max-width:118px; }
+  .logout-btn{ all:unset; cursor:pointer; font-size:10.5px; font-weight:700; color:var(--danger); padding:8px 11px; border-radius:999px; background:rgba(232,72,59,0.08); flex:0 0 auto; }
+
+  .app.app-hidden{ display:none; }
+
+  /* LOCATION TOAST */
+  .loc-toast-wrap{
+    position:fixed; left:0; right:0; bottom:calc(18px + env(safe-area-inset-bottom, 0px));
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    pointer-events:none; z-index:9999;
+  }
+  .loc-toast{
+    pointer-events:auto;
+    max-width:min(92vw, 420px);
+    display:flex; align-items:center; gap:10px;
+    background:var(--text-0); color:#fff;
+    border-radius:999px; padding:10px 16px;
+    font-size:12.5px; font-weight:600;
+    box-shadow:0 8px 24px rgba(20,40,80,0.25);
+    opacity:0; transform:translateY(10px);
+    transition:opacity .25s ease, transform .25s ease;
+  }
+  .loc-toast.show{ opacity:1; transform:translateY(0); }
+  .loc-toast .lt-icon{ font-size:15px; }
+
+  /* Hide the injected Google Translate top banner/toolbar so layout doesn't jump */
+  body{ top:0 !important; }
+  .goog-te-banner-frame{ display:none !important; }
+  .skiptranslate > iframe{ display:none !important; }
+  #google_translate_element{ position:absolute; left:-9999px; top:-9999px; height:0; overflow:hidden; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand"><span class="dot"></span>Weather<span class="gpt">GPT</span></div>
+    <div class="login-sub">Golaghat, Assam — weather &amp; flood-safety alerts</div>
+
+    <div class="login-lang">
+      <label>Choose your language / আপোনাৰ ভাষা বাছক / अपनी भाषा चुनें</label>
+      <select class="lang-select" id="loginLangSelect"></select>
+    </div>
+
+    <form id="loginForm" autocomplete="on">
+      <div class="login-field">
+        <label>Name</label>
+        <input id="loginUser" type="text" autocomplete="username" placeholder="Enter your name" required>
+      </div>
+      <div class="login-field">
+        <label>Password</label>
+        <input id="loginPass" type="password" autocomplete="current-password" placeholder="Enter a password" required>
+      </div>
+      <div class="login-error" id="loginError"></div>
+      <button type="submit" class="login-btn" id="loginSubmitBtn">Log In</button>
+    </form>
+    <div class="login-switch">
+      <span id="loginSwitchText">New here?</span> <button type="button" id="loginSwitchBtn">Create an account</button>
+    </div>
+    <div class="login-guest">
+      <button type="button" id="guestBtn">Continue as guest</button>
+    </div>
+  </div>
+</div>
+
+<div class="app app-hidden" id="appRoot">
+
+  <!-- TOP TOOLBAR -->
+  <div class="top-toolbar">
+    <div class="toolbar-user"><span>👋</span><span id="welcomeUser">Guest</span></div>
+    <div class="toolbar-lang"><select class="lang-select" id="appLangSelect"></select></div>
+    <button class="logout-btn" id="logoutBtn">Log out</button>
+  </div>
+
+  <!-- EMERGENCY SIREN BAR -->
+  <div id="emergencyBar">
+    <div class="eb-top">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3 1 21h22L12 3Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></svg>
+      <div>
+        <div class="eb-title" id="ebTitle">SEVERE WEATHER ALERT</div>
+        <div class="eb-sub" id="ebSub">Heavy rain &amp; flood risk near Golaghat — take precautions now.</div>
+      </div>
+    </div>
+    <div class="eb-actions">
+      <a class="eb-btn eb-call" id="ebCall" href="tel:112">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 5c0-1 1-2 2-2h2l2 5-2 1a11 11 0 0 0 6 6l1-2 5 2v2c0 1-1 2-2 2A16 16 0 0 1 4 5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        Call Emergency (112)
+      </a>
+      <button class="eb-btn eb-mute" id="ebMute">🔊 Mute siren</button>
+    </div>
+    <div class="eb-note">Tapping "Call" opens your phone dialer — you confirm before anything is actually dialed. This app never places calls on its own.</div>
+  </div>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="brand"><span class="dot"></span>Weather<span class="gpt">GPT</span></div>
+    <div class="navlinks">
+      <button data-view="home" class="active">Home</button>
+      <button data-view="forecast">Forecast</button>
+      <button data-view="alert">Alert</button>
+      <button data-view="climate">Climate</button>
+      <button data-view="about">About</button>
+    </div>
+  </nav>
+
+  <!-- HOME VIEW -->
+  <section class="view active" id="view-home">
+
+    <div class="hero">
+      <div class="hero-top">
+        <div>
+          <div class="hero-date">Wed, 9 Sept · Updated just now</div>
+          <button class="hero-loc" id="heroLocBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" width="13" height="13"><path d="M12 22s7-7.58 7-13A7 7 0 0 0 5 9c0 5.42 7 13 7 13Z" stroke="#7ecbff" stroke-width="1.6"/><circle cx="12" cy="9" r="2.4" stroke="#7ecbff" stroke-width="1.6"/></svg>
+            <span id="locLabel">Golaghat, Assam</span>
+            <svg viewBox="0 0 24 24" width="9" height="9" fill="none" style="margin-left:1px;"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+        <button class="refresh-btn" id="refreshBtn" title="Refresh">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M4 4v5h5M20 20v-5h-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <div class="loc-panel" id="locPanel" style="display:none;">
+        <div class="loc-search-row">
+          <input id="locInput" type="text" placeholder="Search city or district…">
+          <button id="locGeoBtn" title="Use my current location">📍</button>
+        </div>
+        <div class="loc-results" id="locResults"></div>
+        <div class="loc-note" id="locNote" style="display:none;">Live conditions above update for your search — the flood &amp; community-safety sections further down stay focused on Golaghat, Assam.</div>
+      </div>
+
+      <div class="hero-main">
+        <div class="temp-block">
+          <div class="temp" id="mainTemp">27°</div>
+          <div class="cond" id="mainCond">Cloudy, light haze</div>
+          <div class="feels">Feels like 30° · H:29° L:23°</div>
+        </div>
+        <svg class="hero-icon" viewBox="0 0 64 64" fill="none">
+          <circle cx="24" cy="26" r="11" fill="#f5c451"/>
+          <ellipse cx="34" cy="38" rx="20" ry="12" fill="#c9d6e8"/>
+          <ellipse cx="24" cy="34" rx="14" ry="9" fill="#e7edf6"/>
+        </svg>
+      </div>
+
+      <div class="hero-strip">
+        <div class="item"><div class="label">Wind</div><div class="val">11 km/h</div></div>
+        <div class="item"><div class="label">Humidity</div><div class="val">78%</div></div>
+        <div class="item"><div class="label">Rain</div><div class="val">40%</div></div>
+        <div class="item"><div class="label">UV</div><div class="val">4 Mod</div></div>
+      </div>
+    </div>
+
+    <div class="persona-card">
+      <div class="sec-head" style="padding:0;"><h2>Made for how you use the weather</h2></div>
+      <div class="persona-sub">Pick who you are and WeatherGPT explains what today's wind, rain and conditions mean for you.</div>
+      <div class="persona-tabs" id="personaTabs">
+        <button class="persona-btn active" data-persona="farmer">Farmer</button>
+        <button class="persona-btn" data-persona="fisherman">Fisherman</button>
+        <button class="persona-btn" data-persona="commuter">Commuter</button>
+        <button class="persona-btn" data-persona="student">Student</button>
+        <button class="persona-btn" data-persona="general">General public</button>
+      </div>
+      <div class="persona-insight" id="personaInsight"></div>
+    </div>
+
+    <div>
+      <div class="sec-head"><h2>Hourly</h2><span class="more" data-goto="forecast">24h →</span></div>
+      <div class="hourly-scroll" id="hourlyStrip"></div>
+    </div>
+
+    <div class="grid2">
+      <div class="dcard">
+        <div class="dc-top">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M9.6 4.6a2.4 2.4 0 1 1 1.7 4.1H3M14 19.4a2.4 2.4 0 1 0 1.7-4.1H3M17.4 9.6a2.4 2.4 0 1 1 1.7 4.1H3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <div class="dc-label">Wind</div>
+        </div>
+        <div class="dc-val">11 <span style="font-size:12px;color:var(--text-2);">km/h</span></div>
+        <svg class="compass" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="20" stroke="var(--panel-line)" stroke-width="1.5"/>
+          <text x="24" y="9" fill="var(--text-2)" font-size="6" text-anchor="middle">N</text>
+          <line x1="24" y1="24" x2="24" y2="10" stroke="var(--sky-b)" stroke-width="2.4" stroke-linecap="round" transform="rotate(48 24 24)"/>
+          <circle cx="24" cy="24" r="2.5" fill="var(--sky-b)"/>
+        </svg>
+        <div class="dc-sub">From NE · Gusts 19 km/h</div>
+      </div>
+
+      <div class="dcard">
+        <div class="dc-top">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3s6 6.5 6 11a6 6 0 1 1-12 0c0-4.5 6-11 6-11Z" stroke="currentColor" stroke-width="1.7"/></svg>
+          <div class="dc-label">Humidity</div>
+        </div>
+        <div class="dc-val">78<span style="font-size:14px;">%</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:78%; background:linear-gradient(90deg, var(--sky-a), var(--sky-b));"></div></div>
+        <div class="dc-sub">Dew point 22°</div>
+      </div>
+
+      <div class="dcard">
+        <div class="dc-top">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <div class="dc-label">UV Index</div>
+        </div>
+        <div class="dc-val">4 <span style="font-size:12px;color:var(--amber);">Moderate</span></div>
+        <div class="uv-scale">
+          <span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="dc-sub">Peak at 12:30 PM</div>
+      </div>
+
+      <div class="dcard">
+        <div class="dc-top">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 12h16M4 12a2 2 0 1 1 3 1.7M4 6h11a2.2 2.2 0 1 1 0 4.4M4 18h13.5a2 2 0 1 0-1.5-3.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <div class="dc-label">Pressure</div>
+        </div>
+        <div class="dc-val">1009<span style="font-size:12px;color:var(--text-2);"> hPa</span></div>
+        <div class="dc-sub" style="margin-top:16px;">▼ Falling · storm risk low</div>
+      </div>
+    </div>
+
+    <div class="aqi-card">
+      <div class="aqi-ring" style="background:conic-gradient(#e08e00 0% 62%, rgba(20,40,80,0.09) 62% 100%); color:#c77600;">
+        <div style="background:var(--panel); width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center;">62</div>
+      </div>
+      <div class="aqi-text">
+        <div class="aqi-t1">Air Quality — Moderate</div>
+        <div class="aqi-t2">PM2.5 34 µg/m³ · OK for most, sensitive groups take care</div>
+      </div>
+    </div>
+
+    <div class="hazard-card">
+      <div class="sec-head" style="padding:0;"><h2>Assam — danger zones</h2><span class="more" data-goto="alert">Alerts →</span></div>
+      <div class="hazard-map">
+        <svg viewBox="0 0 300 150">
+          <!-- Stylized outline of Assam (illustrative, not to exact scale) -->
+          <path d="M20 95 C 25 70, 45 60, 70 62 C 85 50, 100 55, 108 68
+                   C 130 55, 150 60, 158 50 C 175 40, 200 42, 210 55
+                   C 225 48, 245 55, 255 68 C 268 72, 278 85, 270 98
+                   C 260 108, 240 105, 228 112 C 210 122, 185 118, 172 108
+                   C 155 118, 130 118, 118 108 C 100 118, 78 116, 68 104
+                   C 50 112, 28 112, 20 95 Z"
+                fill="#0f2144" stroke="#3a5586" stroke-width="1.3"/>
+          <!-- district zones -->
+          <circle class="hz-zone" cx="245" cy="70" r="16" fill="#ff6a5f"/>
+          <circle class="hz-zone" cx="95" cy="70" r="13" fill="#f5a623"/>
+          <circle class="hz-zone" cx="150" cy="90" r="10" fill="#48d3e8" opacity="0.35"/>
+          <!-- safe zone -->
+          <circle class="hz-zone" cx="60" cy="105" r="12" fill="#54e6a4" opacity="0.4"/>
+          <circle cx="60" cy="105" r="3.5" fill="#54e6a4"/>
+          <text x="60" y="122" fill="#54e6a4" font-size="6.5" text-anchor="middle" font-weight="700">Higher ground</text>
+          <!-- escape direction arrow: from you (150,90) toward safe zone (60,105) -->
+          <defs>
+            <marker id="arrowHead" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+              <path d="M0 0 L8 4 L0 8 Z" fill="#54e6a4"/>
+            </marker>
+          </defs>
+          <line x1="142" y1="93" x2="72" y2="104" stroke="#54e6a4" stroke-width="2.2" stroke-dasharray="4 3" marker-end="url(#arrowHead)"/>
+          <circle cx="150" cy="90" r="4.5" fill="#48d3e8"/>
+          <circle cx="150" cy="90" r="8" fill="none" stroke="#48d3e8" stroke-width="1.2" opacity=".6"/>
+          <text x="150" y="105" fill="#eef3fb" font-size="7" text-anchor="middle" font-weight="700">Golaghat</text>
+          <text x="245" y="68" fill="#3a0906" font-size="6.5" text-anchor="middle" font-weight="700">Dhemaji</text>
+          <text x="95" y="68" fill="#3a1c00" font-size="6.5" text-anchor="middle" font-weight="700">Jorhat</text>
+        </svg>
+      </div>
+      <div class="hazard-legend">
+        <div><span style="background:#ff6a5f;"></span>Danger — flood/disaster risk</div>
+        <div><span style="background:#f5a623;"></span>Watch — monitor conditions</div>
+        <div><span style="background:#48d3e8;"></span>Your area — currently normal</div>
+        <div><span style="background:#54e6a4;"></span>Safer ground — suggested direction</div>
+      </div>
+      <div class="dc-sub" style="margin-top:8px;">Map is a simplified, illustrative layout of Assam — not to exact scale.</div>
+
+      <div class="escape-card">
+        <div class="escape-top">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3v13m0 0-5-5m5 5 5-5M5 21h14" stroke="#54e6a4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div class="escape-t">Suggested direction: <b>South-West</b></div>
+            <div class="escape-s">Toward higher ground near Golaghat town center, away from the river belt and low-lying fields.</div>
+          </div>
+        </div>
+        <div class="escape-note">⚠ This is a general, illustrative suggestion — not an official evacuation route. Always follow instructions from local authorities, district disaster management, or the police during a real emergency.</div>
+      </div>
+
+      <div class="hazard-list">
+        <div class="hz-row"><span class="hz-badge" style="background:#ff6a5f;"></span><span class="hzn">Dhemaji district — severe flood danger</span><span class="hzd">≈140 km</span></div>
+        <div class="hz-row"><span class="hz-badge" style="background:#f5a623;"></span><span class="hzn">Jorhat district — heavy rain watch</span><span class="hzd">≈55 km</span></div>
+        <div class="hz-row"><span class="hz-badge" style="background:#48d3e8;"></span><span class="hzn">Golaghat (your area) — normal, monitor rain</span><span class="hzd">0 km</span></div>
+        <div class="hz-row"><span class="hz-badge" style="background:#54e6a4;"></span><span class="hzn">Golaghat town center — higher ground, safer</span><span class="hzd">≈8 km SW</span></div>
+      </div>
+    </div>
+
+    <div class="comment-card">
+      <div class="sec-head" style="padding:0;">
+        <h2>Local reports</h2>
+        <span class="online-pill"><span class="pulse"></span><span id="onlineCount">128</span> online</span>
+      </div>
+      <div class="dc-sub" style="margin-top:6px; margin-bottom:2px;">📍 Showing reports near <b id="reportsLocLabel">Golaghat, Assam</b></div>
+      <div class="dc-sub" style="margin-top:0; margin-bottom:10px;">Real-time notes and photos from people nearby — not verified, use judgment.</div>
+      <div class="comment-form">
+        <input id="commentInput" type="text" placeholder="Share a weather update…" maxlength="180">
+        <button id="commentPhotoBtn" type="button" title="Attach a photo">📷</button>
+        <input id="commentPhotoInput" type="file" accept="image/*" capture="environment" style="display:none;">
+        <button id="commentSend">Post</button>
+      </div>
+      <div class="comment-photo-preview" id="commentPhotoPreview" style="display:none;">
+        <img id="commentPhotoPreviewImg" src="" alt="Selected photo">
+        <button id="commentPhotoRemove" type="button">✕</button>
+      </div>
+      <div class="comment-list" id="commentList"></div>
+    </div>
+
+    <div class="status-card">
+      <div class="sec-head" style="padding:0;"><h2>Community safety status</h2></div>
+      <div class="dc-sub" style="margin-top:6px;">Self-reported check-ins during the active alert — not an official count of people affected.</div>
+      <div class="status-stats">
+        <div class="stat-box safe"><div class="sv" id="statSafe">0</div><div class="sl">Safe</div></div>
+        <div class="stat-box help"><div class="sv" id="statHelp">0</div><div class="sl">Need help</div></div>
+        <div class="stat-box wait"><div class="sv" id="statWait">0</div><div class="sl">No response</div></div>
+      </div>
+      <div class="checkin-actions">
+        <button class="btn-safe" id="btnImSafe">✓ I'm safe</button>
+        <button class="btn-help" id="btnNeedHelp">⚠ I need help</button>
+      </div>
+      <div class="share-row" id="shareRow" style="display:none;">
+        <button class="share-btn" id="shareWA">Share on WhatsApp</button>
+        <button class="share-btn" id="shareSMS">Share via SMS</button>
+      </div>
+      <div class="status-list" id="statusList"></div>
+      <div class="status-note">If you don't check in while a severe alert is active, your status is marked "No response" along with the last location you shared (only if you tapped a check-in button and allowed location access — nothing is tracked silently). This board is local to your device for this demo and isn't sent to real responders.</div>
+    </div>
+
+    <div class="sun-card">
+      <div class="sec-head" style="padding:0;"><h2>Sun & Moon</h2></div>
+      <svg viewBox="0 0 300 90" width="100%" height="70" style="margin-top:8px;">
+        <path d="M15 78 Q150 -10 285 78" fill="none" stroke="var(--panel-line)" stroke-width="2"/>
+        <path d="M15 78 Q150 -10 285 78" fill="none" stroke="var(--amber)" stroke-width="2.5" stroke-dasharray="330" stroke-dashoffset="180" stroke-linecap="round"/>
+        <circle cx="178" cy="24" r="6" fill="#f5c451"/>
+        <line x1="15" y1="78" x2="285" y2="78" stroke="var(--panel-line)" stroke-width="1"/>
+      </svg>
+      <div class="sun-row"><span>Sunrise <b>5:24 AM</b></span><span>Sunset <b>6:02 PM</b></span><span>Moon <b>Waxing 62%</b></span></div>
+    </div>
+
+  </section>
+
+  <!-- FORECAST VIEW -->
+  <section class="view" id="view-forecast">
+
+    <div class="outlook-card">
+      <div class="sec-head" style="padding:0;"><h2>Flood &amp; storm outlook</h2></div>
+      <div class="outlook-grid">
+        <div class="outlook-item">
+          <div class="o-ring" style="background:conic-gradient(var(--danger) 0% 58%, rgba(20,40,80,0.09) 58% 100%);"><div class="o-inner">58%</div></div>
+          <div class="o-label">Flood risk</div>
+        </div>
+        <div class="outlook-item">
+          <div class="o-ring" style="background:conic-gradient(#e08e00 0% 62%, rgba(20,40,80,0.09) 62% 100%);"><div class="o-inner">62%</div></div>
+          <div class="o-label">Air quality index</div>
+        </div>
+      </div>
+      <div class="eta-box">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="var(--sky-b)" stroke-width="1.8"/><path d="M12 7v5l3.5 2" stroke="var(--sky-b)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div>
+          <div class="eta-t">Est. time to reach Golaghat: <b id="etaClock">3h 40m</b></div>
+          <div class="eta-s">Based on the current storm's movement toward your area — updates as the system moves.</div>
+        </div>
+      </div>
+      <div class="outlook-note">These figures are simplified demo estimates for illustration only, not an official flood or air-quality forecast. For real decisions, check the India Meteorological Department (IMD) or your local disaster management authority.</div>
+    </div>
+
+    <div class="assam-card">
+      <div class="sec-head" style="padding:0;"><h2>Assam weather map</h2></div>
+      <div class="dc-sub" style="margin-top:4px;">Schematic layout of Assam's districts — not to exact scale.</div>
+      <div class="assam-map">
+        <svg viewBox="0 0 340 190">
+          <!-- main Brahmaputra valley (illustrative) -->
+          <path d="M15 130 C 20 100, 40 90, 60 95 C 80 80, 100 85, 115 92 C 130 78, 150 82, 165 88
+                   C 180 65, 200 55, 215 50 C 235 40, 260 42, 275 50 C 295 42, 315 50, 322 65
+                   C 328 78, 318 90, 305 95 C 290 100, 270 95, 258 100 C 240 92, 220 95, 205 88
+                   C 190 100, 170 98, 158 95 C 145 105, 125 108, 112 100 C 95 112, 75 112, 62 108
+                   C 45 118, 25 118, 15 130 Z"
+                fill="#0f2144" stroke="#3a5586" stroke-width="1.2"/>
+          <!-- Barak valley (illustrative) -->
+          <path d="M195 140 C 205 130, 225 128, 240 135 C 258 132, 272 142, 268 158
+                   C 262 172, 240 175, 222 170 C 205 175, 190 168, 190 155 C 188 148, 190 143, 195 140 Z"
+                fill="#0f2144" stroke="#3a5586" stroke-width="1.2"/>
+
+          <!-- districts: colored by current condition -->
+          <circle cx="20" cy="140" r="5.5" fill="#f5c451"/>
+          <circle cx="65" cy="112" r="5.5" fill="#7688ab"/>
+          <circle cx="92" cy="100" r="5.5" fill="#48d3e8"/>
+          <circle cx="122" cy="98" r="5.5" fill="#7688ab"/>
+          <circle cx="142" cy="86" r="5.5" fill="#48d3e8"/>
+          <circle cx="167" cy="90" r="5.5" fill="#ff6a5f"/>
+          <circle cx="172" cy="66" r="5.5" fill="#48d3e8"/>
+          <circle cx="202" cy="56" r="5.5" fill="#ff6a5f"/>
+          <circle cx="226" cy="50" r="5.5" fill="#ff6a5f"/>
+          <circle cx="216" cy="80" r="5.5" fill="#48d3e8"/>
+          <circle cx="196" cy="94" r="6.2" fill="#48d3e8" stroke="#eef3fb" stroke-width="1.3"/>
+          <circle cx="243" cy="74" r="5.5" fill="#7688ab"/>
+          <circle cx="268" cy="55" r="5.5" fill="#f5c451"/>
+          <circle cx="293" cy="46" r="5.5" fill="#f5c451"/>
+          <circle cx="228" cy="150" r="5.5" fill="#48d3e8"/>
+          <circle cx="252" cy="160" r="5.5" fill="#7688ab"/>
+
+          <!-- flood movement track: Dhemaji -> Lakhimpur -> toward Golaghat -->
+          <defs>
+            <marker id="floodArrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+              <path d="M0 0 L8 4 L0 8 Z" fill="#ff6a5f"/>
+            </marker>
+          </defs>
+          <path id="floodPath" d="M226 50 C 216 62, 206 76, 198 90" fill="none" stroke="#ff6a5f" stroke-width="2.2" stroke-dasharray="5 4" marker-end="url(#floodArrow)" opacity="0.9"/>
+          <circle r="4.2" fill="#ff6a5f">
+            <animateMotion dur="3.2s" repeatCount="indefinite" path="M226 50 C 216 62, 206 76, 198 90"/>
+            <animate attributeName="opacity" values="1;0.3;1" dur="3.2s" repeatCount="indefinite"/>
+          </circle>
+          <text x="238" y="42" fill="#ff6a5f" font-size="6.5" text-anchor="middle" font-weight="700">Flood moving SW</text>
+
+          <text x="196" y="106" fill="#eef3fb" font-size="6.5" text-anchor="middle" font-weight="700">Golaghat</text>
+        </svg>
+      </div>
+      <div class="cond-legend">
+        <div><span style="background:#f5c451;"></span>Clear</div>
+        <div><span style="background:#7688ab;"></span>Cloudy</div>
+        <div><span style="background:#48d3e8;"></span>Rain</div>
+        <div><span style="background:#ff6a5f;"></span>Storm / flood risk</div>
+        <div><span style="background:#ff6a5f; box-shadow:0 0 5px #ff6a5f;"></span>Flood direction (live sim.)</div>
+      </div>
+      <div class="eta-box" style="margin-top:10px;">
+        <svg viewBox="0 0 24 24" fill="none" style="width:18px;height:18px;"><path d="M9.6 4.6a2.4 2.4 0 1 1 1.7 4.1H3M14 19.4a2.4 2.4 0 1 0 1.7-4.1H3M17.4 9.6a2.4 2.4 0 1 1 1.7 4.1H3" stroke="var(--sky-b)" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <div>
+          <div class="eta-t">Flood system tracking <b>south-west</b>, ~9 km/h</div>
+          <div class="eta-s">Currently over Dhemaji, moving toward Lakhimpur and Jorhat — the animated dot shows simulated direction of travel.</div>
+        </div>
+      </div>
+      <div class="district-grid">
+        <div class="dchip"><span class="ddot" style="background:#f5c451;"></span><div class="dinfo"><span class="dn">Dhubri</span><span class="dc">Clear</span></div></div>
+        <div class="dchip"><span class="ddot" style="background:#7688ab;"></span><div class="dinfo"><span class="dn">Bongaigaon</span><span class="dc">Cloudy</span></div></div>
+        <div class="dchip"><span class="ddot" style="background:#48d3e8;"></span><div class="dinfo"><span class="dn">Barpeta</span><span class="dc">Rain</span></div></div>
+        <div class="dchip"><span class="ddot" style="background:#7688ab;"></span><div class="dinfo"><span class="dn">Kamrup (Guwahati)</span><span class="dc">Cloudy</span></div></div>
+        <div class="dchip"><span class="ddot" style="background:#48d3e8;"></span><div class="dinfo"><span class="dn">Darrang</span><span class="dc">Rain</span></div></div>
+        <div class="dchip"><span class="ddot" style="background:#ff6a5f;"></span><div class="dinfo"><span class="dn">Nagaon</span><span class="dc">Storm</span></div></div>
+        <div class="dchip"><span class="ddot" style="background:#48d3e8;"></span><div class="dinfo"><span class="dn">Sonitpur</span><span class="dc">Rain</span></div></div>
+        <div class="dchip"><span class="ddot" style="background:#ff6a5f;"></span><div class="dinfo"><span class="dn">Lakhimpur</span><span class="dc">Storm</span></div></div>
+        <div class="dchip"><span class="ddot" style="background:#ff6a5f;"></span><div class="dinfo"><span class="dn">Dhemaji</span><span class="dc">Flood risk</span></div></div>
+        <div class="dchip"><span class="ddot" style="background:#48d3e8;"></span><div class="dinfo"><span class="dn">Jorhat</span><span class="dc">Rain</span></div></div>
+        <div class="dchip"><span class="ddot" style="background:#48d3e8; box-shadow:0 0 0 2px rgba(72,211,232,0.35);"></span><div class="dinfo"><span class="dn">Golaghat (you)</span><span class="dc">Rain</span></div></div>
+        <div class="dchip"><span class="ddot" style="background:#7688ab;"></span><div class="dinfo"><span class="dn">Sivasagar</span><span class="dc">Cloudy</span></div></div>
+        <div class="dchip"><span class="ddot" style="background:#f5c451;"></span><div class="dinfo"><span class="dn">Dibrugarh</span><span class="dc">Clear</span></div></div>
+        <div class="dchip"><span class="ddot" style="background:#f5c451;"></span><div class="dinfo"><span class="dn">Tinsukia</span><span class="dc">Clear</span></div></div>
+        <div class="dchip"><span class="ddot" style="background:#48d3e8;"></span><div class="dinfo"><span class="dn">Cachar (Silchar)</span><span class="dc">Rain</span></div></div>
+        <div class="dchip"><span class="ddot" style="background:#7688ab;"></span><div class="dinfo"><span class="dn">Karimganj</span><span class="dc">Cloudy</span></div></div>
+      </div>
+      <div class="outlook-note">District conditions and the flood movement animation are illustrative demo data for this prototype — not a live meteorological or hydrological feed. For real flood tracking, use the Central Water Commission (CWC) flood forecast portal or your local disaster management authority.</div>
+    </div>
+
+    <div class="toggle-row">
+      <button class="on" data-fc="hourly">24-Hour</button>
+      <button data-fc="daily">7-Day</button>
+    </div>
+
+    <div id="fc-hourly">
+      <div class="sec-head"><h2>Next 24 hours</h2></div>
+      <div class="hourly-scroll" id="hourlyStripFull"></div>
+      <div class="dcard" style="margin-top:4px;">
+        <div class="dc-label">Precipitation outlook</div>
+        <div class="dc-sub" id="precipOutlook" style="margin-top:8px;">Light showers likely between 3–6 PM, clearing by evening. Total expected: 4mm.</div>
+      </div>
+    </div>
+
+    <div id="fc-daily" style="display:none; display:flex; flex-direction:column; gap:14px;">
+      <div class="sec-head"><h2>7-day outlook</h2></div>
+      <div class="daylist" id="dayList"></div>
+    </div>
+  </section>
+
+  <!-- ALERT VIEW -->
+  <section class="view" id="view-alert">
+    <div class="sec-head"><h2>Active alerts</h2></div>
+
+    <div class="dcard" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+      <div>
+        <div class="dc-label">Alert volume</div>
+        <div class="dc-sub" style="margin-top:2px;">Siren sound plays when a severe alert is active</div>
+      </div>
+      <button class="eb-mute" id="alertMuteToggle" style="all:unset; cursor:pointer; padding:8px 14px; border-radius:999px; background:var(--sky-a); color:#fff; font-size:11.5px; font-weight:700;">🔊 On</button>
+    </div>
+
+    <div class="dcard" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+      <div>
+        <div class="dc-label">Push notifications</div>
+        <div class="dc-sub" style="margin-top:2px;">Get a browser alert when severe weather is detected for your area</div>
+      </div>
+      <button class="notif-btn" id="notifBtn">🔔 Enable</button>
+    </div>
+
+    <div class="alert-banner" style="border-color:rgba(255,106,95,0.6); background:linear-gradient(135deg, rgba(255,106,95,0.22), rgba(255,106,95,0.05));">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3 1 21h22L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+      <div style="flex:1;">
+        <div class="at">SEVERE — Heavy rain &amp; flood watch, Golaghat district</div>
+        <div class="ad">Isolated heavy showers with gusty winds expected between 3–6 PM today. Localized waterlogging and flash-flood risk near the Kharial river belt. Valid until 9 PM.</div>
+        <a href="tel:112" style="display:inline-flex; align-items:center; gap:6px; margin-top:10px; background:var(--danger); color:#2a0603; font-size:11.5px; font-weight:800; padding:9px 14px; border-radius:999px; text-decoration:none;">📞 Call emergency services — 112</a>
+      </div>
+    </div>
+    <div class="alert-banner" style="border-color:rgba(245,166,35,0.35); background:linear-gradient(135deg, rgba(245,166,35,0.14), rgba(245,166,35,0.03));">
+      <svg viewBox="0 0 24 24" fill="none" style="color:var(--amber);"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.7"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      <div>
+        <div class="at" style="color:#ffd9a0;">UV advisory</div>
+        <div class="ad">UV index reaching 4 (Moderate) near midday. Sunscreen recommended for extended outdoor activity.</div>
+      </div>
+    </div>
+
+    <div class="sec-head" style="margin-top:4px;"><h2>Set custom alert</h2></div>
+    <div class="dcard">
+      <div class="dc-sub" style="margin-bottom:10px;">Get notified when conditions cross your thresholds.</div>
+      <div class="chip-row" style="padding:0;">
+        <button class="chip">Rain probability &gt; 60%</button>
+        <button class="chip">Temp above 35°</button>
+        <button class="chip">Wind &gt; 30 km/h</button>
+        <button class="chip">AQI unhealthy</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLIMATE VIEW -->
+  <section class="view" id="view-climate">
+    <div class="sec-head"><h2>Monthly averages</h2></div>
+    <div class="month-bars" id="climateBars"></div>
+    <div class="grid2">
+      <div class="dcard">
+        <div class="dc-label">Wettest month</div>
+        <div class="dc-val" style="font-size:18px;">July</div>
+        <div class="dc-sub">~520mm avg rainfall</div>
+      </div>
+      <div class="dcard">
+        <div class="dc-label">Warmest month</div>
+        <div class="dc-val" style="font-size:18px;">August</div>
+        <div class="dc-sub">Avg high 33°</div>
+      </div>
+    </div>
+    <div class="about-card">
+      <h3>Climate note</h3>
+      Golaghat sits in Assam's Brahmaputra valley and follows a humid subtropical pattern — a long monsoon season from May to September, a mild winter from December to February, and short, sharp transitional shoulders in between.
+    </div>
+    </section>
+
+  <!-- ABOUT VIEW -->
+  <section class="view" id="view-about">
+    <div class="about-card">
+      <h3>About WeatherGPT</h3>
+      WeatherGPT blends live conditions with an AI assistant so you can ask questions in plain language instead of decoding a dashboard — "will it rain during my commute," not just a percentage on a screen.
+      <div class="credit-row">
+        <div><div class="cv">12</div><div class="cl">Data points tracked</div></div>
+        <div><div class="cv">15min</div><div class="cl">Refresh interval</div></div>
+        <div><div class="cv">7d</div><div class="cl">Forecast range</div></div>
+      </div>
+    </div>
+    <div class="sec-head"><h2>Ask the assistant</h2></div>
+    <div class="chat-shell">
+      <div class="chat-head"><span class="pulse"></span>Assistant is online</div>
+      <div class="chat-log" id="chatLog">
+        <div class="msg bot">Hi — ask me about today's weather, tomorrow's rain chances, or what to wear out.</div>
+      </div>
+      <div class="chip-row">
+        <button class="chip" data-ask="Will it rain today?">Will it rain today?</button>
+        <button class="chip" data-ask="Is it safe for farming today?">Safe for farming?</button>
+        <button class="chip" data-ask="What should I wear?">What to wear?</button>
+        <button class="chip" data-ask="How's the weekend look?">Weekend outlook</button>
+      </div>
+      <div class="chat-input">
+        <input id="chatInput" type="text" placeholder="Message WeatherGPT…">
+        <button id="chatSend"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12h15M13 6l6 6-6 6" stroke="#03101f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <footer>WeatherGPT · <span id="footerLoc">Golaghat, Assam</span> · live data via Open-Meteo<span class="build-tag">rev. 2026-09-09 · live data + location search update</span></footer>
+</div>
+
+<div class="voice-panel" id="voicePanel">
+  <div class="vp-status"><span class="vdot"></span><span id="voiceStatusText">Listening…</span></div>
+  <div class="vp-transcript" id="voiceTranscript">Try "mark me safe", "mute the siren", "post a comment...", "switch to farmer view", "what's the air quality", or "search London".</div>
+  <div class="vp-hint">Tap the mic again to stop.</div>
+  <button class="vp-close" id="voicePanelClose">Close</button>
+</div>
+<div class="loc-toast-wrap" id="locToastWrap"></div>
+<button class="wake-toggle" id="wakeToggle" title="Toggle 'Hey WeatherGPT' wake word" aria-label="Toggle wake word">
+  <span class="dot"></span>
+  <span id="wakeToggleLabel">Wake word off</span>
+</button>
+<button class="voice-fab" id="voiceFab" title="Voice command" aria-label="Voice command">
+  <span class="voice-ring"></span>
+  <svg viewBox="0 0 24 24" fill="none" id="voiceFabIcon">
+    <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M19 11a7 7 0 0 1-14 0M12 18v3" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+</button>
+
+<div class="photo-lightbox" id="photoLightbox">
+  <img id="lightboxImg" src="" alt="Full size photo">
+</div>
+
+<script>
+// ---------- data ----------
+const iconCloud = `<svg viewBox="0 0 48 48" fill="none"><ellipse cx="26" cy="28" rx="15" ry="9" fill="#c9d6e8"/><ellipse cx="17" cy="25" rx="10" ry="7" fill="#e7edf6"/></svg>`;
+const iconSun = `<svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="10" fill="#f5c451"/></svg>`;
+const iconRain = `<svg viewBox="0 0 48 48" fill="none"><ellipse cx="24" cy="20" rx="14" ry="8" fill="#c9d6e8"/><line x1="16" y1="32" x2="13" y2="40" stroke="#5fb0ff" stroke-width="2.4" stroke-linecap="round"/><line x1="24" y1="32" x2="21" y2="40" stroke="#5fb0ff" stroke-width="2.4" stroke-linecap="round"/><line x1="32" y1="32" x2="29" y2="40" stroke="#5fb0ff" stroke-width="2.4" stroke-linecap="round"/></svg>`;
+const iconPartly = `<svg viewBox="0 0 48 48" fill="none"><circle cx="18" cy="18" r="8" fill="#f5c451"/><ellipse cx="27" cy="28" rx="13" ry="8" fill="#c9d6e8"/></svg>`;
+
+let hourlyShort = [
+  {t:'Now', ic:iconCloud, v:'27°', p:''},
+  {t:'2PM', ic:iconPartly, v:'28°', p:'20%'},
+  {t:'3PM', ic:iconRain, v:'27°', p:'55%'},
+  {t:'4PM', ic:iconRain, v:'26°', p:'62%'},
+  {t:'5PM', ic:iconRain, v:'25°', p:'48%'},
+  {t:'6PM', ic:iconCloud, v:'25°', p:'22%'},
+  {t:'7PM', ic:iconCloud, v:'24°', p:'10%'},
+  {t:'8PM', ic:iconCloud, v:'23°', p:'8%'},
+  {t:'9PM', ic:iconCloud, v:'23°', p:'5%'},
+  {t:'10PM', ic:iconCloud, v:'22°', p:'5%'},
+];
+let hourlyFull = hourlyShort;
+
+let days = [
+  {n:'Today', ic:iconCloud, rain:'40%', lo:23, hi:29, today:true},
+  {n:'Thu', ic:iconRain, rain:'65%', lo:23, hi:27},
+  {n:'Fri', ic:iconRain, rain:'70%', lo:22, hi:26},
+  {n:'Sat', ic:iconPartly, rain:'30%', lo:22, hi:28},
+  {n:'Sun', ic:iconSun, rain:'10%', lo:22, hi:30},
+  {n:'Mon', ic:iconSun, rain:'5%', lo:23, hi:31},
+  {n:'Tue', ic:iconPartly, rain:'25%', lo:23, hi:29},
+];
+
+const monthsData = [
+  {m:'J',h:20},{m:'F',h:24},{m:'M',h:34},{m:'A',h:46},{m:'M',h:62},{m:'J',h:82},
+  {m:'J',h:100},{m:'A',h:88},{m:'S',h:70},{m:'O',h:40},{m:'N',h:18},{m:'D',h:14}
+];
+
+function buildHourly(containerId, list){
+  const el = document.getElementById(containerId);
+  el.innerHTML = list.map(h => `
+    <div class="hcard ${h.t==='Now'?'now':''}">
+      <div class="t">${h.t}</div>
+      ${h.ic}
+      <div class="v">${h.v}</div>
+      <div class="p">${h.p}</div>
+    </div>`).join('');
+}
+buildHourly('hourlyStrip', hourlyShort);
+buildHourly('hourlyStripFull', hourlyFull);
+
+const dayListEl = document.getElementById('dayList');
+function renderDays(list){
+  const allLo = list.map(d=>d.lo), allHi = list.map(d=>d.hi);
+  const minT = Math.min(...allLo), maxT = Math.max(...allHi);
+  dayListEl.innerHTML = list.map(d => {
+    const leftPct = ((d.lo - minT) / (maxT - minT)) * 100;
+    const widthPct = ((d.hi - d.lo) / (maxT - minT)) * 100;
+    return `
+    <div class="drow">
+      <div class="dname ${d.today?'today':''}">${d.n}</div>
+      ${d.ic}
+      <div class="rain">${d.rain}</div>
+      <div class="range">
+        <span class="lo">${d.lo}°</span>
+        <div class="range-track"><div class="range-fill" style="left:${leftPct}%; width:${widthPct}%;"></div></div>
+        <span class="hi">${d.hi}°</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+renderDays(days);
+
+const climEl = document.getElementById('climateBars');
+climEl.innerHTML = monthsData.map(m => `
+  <div class="mb">
+    <div class="stack" style="height:${m.h}%;"></div>
+    <div class="ml">${m.m}</div>
+  </div>`).join('');
+
+// ---------- comments (local reports) ----------
+const commentList = document.getElementById('commentList');
+const commentInput = document.getElementById('commentInput');
+const commentSend = document.getElementById('commentSend');
+let comments = [
+  {name:'Rina', text:'Started drizzling near Golaghat market, roads still fine.', time:'6 min ago'},
+  {name:'Deep', text:'Strong gusts near the river bridge, be careful on bikes.', time:'22 min ago'},
+];
+function renderComments(){
+  if (!comments.length){
+    commentList.innerHTML = `<div class="comment-empty">No reports yet — be the first to share one.</div>`;
+    return;
+  }
+  commentList.innerHTML = comments.map(c => `
+    <div class="comment">
+      <div class="cav">${c.name.charAt(0).toUpperCase()}</div>
+      <div class="cbody">
+        <span class="cname">${c.name}</span><span class="ctime">${c.time}</span>
+        ${c.text ? `<div class="ctext">${c.text}</div>` : ''}
+        ${c.photo ? `<img class="cphoto" src="${c.photo}" alt="Photo shared by ${c.name}">` : ''}
+      </div>
+    </div>`).join('');
+}
+commentList.addEventListener('click', (e) => {
+  if (e.target.classList.contains('cphoto')) openLightbox(e.target.src);
+});
+const photoLightbox = document.getElementById('photoLightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+function openLightbox(src){ lightboxImg.src = src; photoLightbox.style.display = 'flex'; }
+photoLightbox.addEventListener('click', () => { photoLightbox.style.display = 'none'; lightboxImg.src = ''; });
+const commentPhotoBtn = document.getElementById('commentPhotoBtn');
+const commentPhotoInput = document.getElementById('commentPhotoInput');
+const commentPhotoPreview = document.getElementById('commentPhotoPreview');
+const commentPhotoPreviewImg = document.getElementById('commentPhotoPreviewImg');
+const commentPhotoRemove = document.getElementById('commentPhotoRemove');
+let pendingPhoto = null;
+
+commentPhotoBtn.addEventListener('click', () => commentPhotoInput.click());
+commentPhotoInput.addEventListener('change', () => {
+  const file = commentPhotoInput.files[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    pendingPhoto = reader.result;
+    commentPhotoPreviewImg.src = pendingPhoto;
+    commentPhotoPreview.style.display = 'inline-flex';
+  };
+  reader.readAsDataURL(file);
+});
+commentPhotoRemove.addEventListener('click', () => {
+  pendingPhoto = null;
+  commentPhotoInput.value = '';
+  commentPhotoPreview.style.display = 'none';
+});
+
+function postComment(){
+  const text = commentInput.value.trim();
+  if (!text && !pendingPhoto) return;
+  comments.unshift({name:'You', text, time:'just now', photo: pendingPhoto});
+  commentInput.value = '';
+  pendingPhoto = null;
+  commentPhotoInput.value = '';
+  commentPhotoPreview.style.display = 'none';
+  renderComments();
+}
+commentSend.addEventListener('click', postComment);
+commentInput.addEventListener('keydown', e => { if (e.key === 'Enter') postComment(); });
+renderComments();
+
+// ---------- ETA countdown (demo estimate, not an official forecast) ----------
+const etaClockEl = document.getElementById('etaClock');
+let etaSeconds = (3*60 + 40) * 60; // 3h 40m
+function formatEta(sec){
+  if (sec <= 0) return 'Arriving now';
+  const h = Math.floor(sec/3600);
+  const m = Math.floor((sec%3600)/60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+setInterval(() => {
+  if (etaSeconds > 0){
+    etaSeconds -= 60;
+    etaClockEl.textContent = formatEta(etaSeconds);
+  }
+}, 60000);
+
+// ---------- online counter (simulated presence, demo only) ----------
+const onlineCountEl = document.getElementById('onlineCount');
+let onlineCount = 128;
+setInterval(() => {
+  onlineCount = Math.max(40, onlineCount + Math.floor(Math.random()*7) - 3);
+  onlineCountEl.textContent = onlineCount;
+}, 3500);
+
+// ---------- community safety check-in board ----------
+// All entries here are demo/self-reported placeholder data, not a real
+// count of anyone actually affected by a disaster.
+let checkins = [
+  {name:'Rina',  status:'safe', loc:'Golaghat town centre', time:'4 min ago'},
+  {name:'Deep',  status:'safe', loc:'Near NH 39',            time:'9 min ago'},
+  {name:'Mitu',  status:'help', loc:'Kharial river belt',    time:'2 min ago'},
+  {name:'You',   status:'wait', loc:'Not shared yet',        time:'—'},
+];
+const statSafe = document.getElementById('statSafe');
+const statHelp = document.getElementById('statHelp');
+const statWait = document.getElementById('statWait');
+const statusList = document.getElementById('statusList');
+
+function renderStatus(){
+  const counts = {safe:0, help:0, wait:0};
+  checkins.forEach(c => counts[c.status]++);
+  statSafe.textContent = counts.safe;
+  statHelp.textContent = counts.help;
+  statWait.textContent = counts.wait;
+  statusList.innerHTML = checkins.map(c => `
+    <div class="status-row">
+      <span class="sdot" style="background:${c.status==='safe'?'#54e6a4':c.status==='help'?'var(--danger)':'var(--text-2)'};"></span>
+      <div style="flex:1;">
+        <span class="sname">${c.name}</span>
+        <span class="sloc">${c.loc} · ${c.time}</span>
+      </div>
+      <span class="stag tag-${c.status}">${c.status==='safe'?'Safe':c.status==='help'?'Need help':'No response'}</span>
+    </div>`).join('');
+}
+renderStatus();
+
+let youCheckedIn = false;
+let noResponseTimer = null;
+
+function clearNoResponseTimer(){
+  if (noResponseTimer) clearTimeout(noResponseTimer);
+  noResponseTimer = null;
+}
+
+function updateYou(status, locLabel){
+  const me = checkins.find(c => c.name === 'You');
+  me.status = status;
+  me.loc = locLabel || me.loc;
+  me.time = 'just now';
+  youCheckedIn = true;
+  clearNoResponseTimer();
+  renderStatus();
+  document.getElementById('shareRow').style.display = 'flex';
+}
+
+function checkInWithLocation(status){
+  if (!navigator.geolocation){
+    updateYou(status, 'Location unavailable on this device');
+    return;
+  }
+  showLocToast('Requesting your location for this check-in — your device will ask for permission.');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude.toFixed(3);
+      const lon = pos.coords.longitude.toFixed(3);
+      showLocToast('Location shared with your check-in.', '✅');
+      updateYou(status, `Approx. ${lat}, ${lon}`);
+    },
+    () => {
+      showLocToast('Location permission not granted for this check-in.', '⚠️');
+      updateYou(status, 'Location permission not granted');
+    },
+    { timeout: 6000 }
+  );
+}
+
+document.getElementById('btnImSafe').addEventListener('click', () => checkInWithLocation('safe'));
+document.getElementById('btnNeedHelp').addEventListener('click', () => checkInWithLocation('help'));
+
+// While a severe alert is showing, if the user hasn't checked in within the
+// demo window, mark them "No response" with whatever location they last
+// shared (or "not shared" if they never tapped a check-in button).
+function armNoResponseTimer(){
+  clearNoResponseTimer();
+  if (youCheckedIn) return;
+  noResponseTimer = setTimeout(() => {
+    if (!youCheckedIn){
+      const me = checkins.find(c => c.name === 'You');
+      me.status = 'wait';
+      me.time = 'marked automatically';
+      renderStatus();
+    }
+  }, 25000); // shortened for demo purposes
+}
+
+// ---------- siren / emergency alert ----------
+let sirenOn = true;
+let audioCtx = null;
+let sirenInterval = null;
+
+function startSiren(){
+  if (!sirenOn || sirenInterval) return;
+  try{
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const playBeep = (freq) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.08, audioCtx.currentTime + 0.05);
+      gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.4);
+    };
+    let toggle = false;
+    playBeep(880);
+    sirenInterval = setInterval(() => { toggle = !toggle; playBeep(toggle ? 880 : 660); }, 500);
+  } catch(e){ /* audio not available */ }
+}
+function stopSiren(){
+  if (sirenInterval) clearInterval(sirenInterval);
+  sirenInterval = null;
+}
+
+const emergencyBar = document.getElementById('emergencyBar');
+const ebMute = document.getElementById('ebMute');
+const alertMuteToggle = document.getElementById('alertMuteToggle');
+
+function setSiren(on){
+  sirenOn = on;
+  const label = on ? '🔊 Mute siren' : '🔇 Unmute siren';
+  ebMute.textContent = label;
+  if (alertMuteToggle) alertMuteToggle.textContent = on ? '🔊 On' : '🔇 Off';
+  if (on) startSiren(); else stopSiren();
+}
+ebMute.addEventListener('click', () => setSiren(!sirenOn));
+if (alertMuteToggle) alertMuteToggle.addEventListener('click', () => setSiren(!sirenOn));
+
+// Show the emergency bar for the active severe alert (demo trigger).
+// In a real deployment this would flip on only when a verified feed reports
+// a severe/extreme alert for the user's area — never automatically.
+function showEmergency(){
+  emergencyBar.classList.add('show');
+  setSiren(true);
+  armNoResponseTimer();
+  if ('Notification' in window && Notification.permission === 'granted'){
+    new Notification(document.getElementById('ebTitle').textContent, { body: document.getElementById('ebSub').textContent });
+  }
+}
+// Browsers block audio until a user gesture — this unlocks it on first tap.
+document.body.addEventListener('click', function unlock(){
+  document.body.removeEventListener('click', unlock);
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  if (emergencyBar.classList.contains('show') && sirenOn) startSiren();
+}, { once:true });
+
+showEmergency();
+
+// ---------- nav ----------
+const navButtons = document.querySelectorAll('.navlinks button');
+const views = document.querySelectorAll('.view');
+function goto(name){
+  navButtons.forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  views.forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+}
+navButtons.forEach(b => b.addEventListener('click', () => goto(b.dataset.view)));
+document.querySelectorAll('[data-goto]').forEach(el => el.addEventListener('click', () => goto(el.dataset.goto)));
+
+// forecast toggle
+document.querySelectorAll('[data-fc]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-fc]').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    document.getElementById('fc-hourly').style.display = btn.dataset.fc === 'hourly' ? 'flex' : 'none';
+    document.getElementById('fc-hourly').style.flexDirection = 'column';
+    document.getElementById('fc-hourly').style.gap = '14px';
+    document.getElementById('fc-daily').style.display = btn.dataset.fc === 'daily' ? 'flex' : 'none';
+  });
+});
+
+// refresh spin
+const refreshBtn = document.getElementById('refreshBtn');
+refreshBtn.addEventListener('click', () => {
+  refreshBtn.classList.add('spin');
+  setTimeout(() => refreshBtn.classList.remove('spin'), 500);
+  fetchAll();
+});
+
+// ---------- push notifications ----------
+const notifBtn = document.getElementById('notifBtn');
+function refreshNotifBtn(){
+  if (!('Notification' in window)){ notifBtn.textContent = 'Not supported'; notifBtn.disabled = true; return; }
+  if (Notification.permission === 'granted'){ notifBtn.textContent = '🔔 Enabled'; notifBtn.classList.add('on'); }
+  else { notifBtn.textContent = '🔔 Enable'; notifBtn.classList.remove('on'); }
+}
+notifBtn.addEventListener('click', async () => {
+  if (!('Notification' in window)) return;
+  await Notification.requestPermission();
+  refreshNotifBtn();
+});
+refreshNotifBtn();
+
+// ---------- share safety status ----------
+const shareRow = document.getElementById('shareRow');
+const shareWA = document.getElementById('shareWA');
+const shareSMS = document.getElementById('shareSMS');
+function buildShareText(){
+  const me = checkins.find(c => c.name === 'You');
+  const statusText = me.status === 'safe' ? "I'm SAFE" : me.status === 'help' ? "I NEED HELP" : 'checking in';
+  return `WeatherGPT safety check-in: ${statusText}. Location: ${me.loc}. (${new Date().toLocaleString()})`;
+}
+shareWA.addEventListener('click', () => window.open('https://wa.me/?text=' + encodeURIComponent(buildShareText()), '_blank'));
+shareSMS.addEventListener('click', () => { window.location.href = 'sms:?&body=' + encodeURIComponent(buildShareText()); });
+
+// ---------- live weather (Open-Meteo, no API key required) ----------
+let state = { lat: 26.5106, lon: 93.9647, name: 'Golaghat, Assam' };
+let weatherNotifSent = false;
+let lastWeather = null; // most recent { wind, gust, windDir, rainPct, rainMm, humidity, pressure, pressureFalling, uv, tempC } from live data
+
+function wmoInfo(code){
+  const map = {
+    0:{ic:iconSun,txt:'Clear sky'}, 1:{ic:iconPartly,txt:'Mostly clear'}, 2:{ic:iconPartly,txt:'Partly cloudy'},
+    3:{ic:iconCloud,txt:'Overcast'}, 45:{ic:iconCloud,txt:'Fog'}, 48:{ic:iconCloud,txt:'Rime fog'},
+    51:{ic:iconRain,txt:'Light drizzle'}, 53:{ic:iconRain,txt:'Drizzle'}, 55:{ic:iconRain,txt:'Dense drizzle'},
+    56:{ic:iconRain,txt:'Freezing drizzle'}, 57:{ic:iconRain,txt:'Freezing drizzle'},
+    61:{ic:iconRain,txt:'Light rain'}, 63:{ic:iconRain,txt:'Rain'}, 65:{ic:iconRain,txt:'Heavy rain'},
+    66:{ic:iconRain,txt:'Freezing rain'}, 67:{ic:iconRain,txt:'Freezing rain'},
+    71:{ic:iconCloud,txt:'Light snow'}, 73:{ic:iconCloud,txt:'Snow'}, 75:{ic:iconCloud,txt:'Heavy snow'}, 77:{ic:iconCloud,txt:'Snow grains'},
+    80:{ic:iconRain,txt:'Rain showers'}, 81:{ic:iconRain,txt:'Rain showers'}, 82:{ic:iconRain,txt:'Violent showers'},
+    85:{ic:iconCloud,txt:'Snow showers'}, 86:{ic:iconCloud,txt:'Snow showers'},
+    95:{ic:iconRain,txt:'Thunderstorm'}, 96:{ic:iconRain,txt:'Thunderstorm w/ hail'}, 99:{ic:iconRain,txt:'Thunderstorm w/ hail'},
+  };
+  return map[code] || {ic:iconCloud, txt:'Cloudy'};
+}
+function uvLabel(v){
+  if (v>=11) return {t:'Extreme', c:'var(--danger)'};
+  if (v>=8) return {t:'Very High', c:'var(--danger)'};
+  if (v>=6) return {t:'High', c:'var(--amber)'};
+  if (v>=3) return {t:'Moderate', c:'var(--amber)'};
+  return {t:'Low', c:'#54e6a4'};
+}
+function aqiLabel(v){
+  if (v<=50) return {t:'Good', c:'#54e6a4'};
+  if (v<=100) return {t:'Moderate', c:'#f5c451'};
+  if (v<=150) return {t:'Unhealthy (Sensitive)', c:'#f5a623'};
+  if (v<=200) return {t:'Unhealthy', c:'#ff6a5f'};
+  if (v<=300) return {t:'Very Unhealthy', c:'#c084fc'};
+  return {t:'Hazardous', c:'#7f1d1d'};
+}
+function degToCompass(deg){
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(deg/22.5) % 16];
+}
+function fmtHour(iso){
+  const d = new Date(iso);
+  let h = d.getHours();
+  const ampm = h>=12?'PM':'AM';
+  h = h%12; if (h===0) h=12;
+  return h+ampm;
+}
+function fmtClock(iso){
+  const d = new Date(iso);
+  let h = d.getHours(), m = d.getMinutes();
+  const ampm = h>=12?'PM':'AM';
+  h = h%12; if (h===0) h=12;
+  return `${h}:${m.toString().padStart(2,'0')} ${ampm}`;
+}
+function fmtWeekday(iso, idx){
+  if (idx===0) return 'Today';
+  return new Date(iso).toLocaleDateString('en-US', {weekday:'short'});
+}
+function moonPhase(date){
+  const known = Date.UTC(2000,0,6,18,14,0);
+  const synodic = 29.53058867;
+  const diffDays = (date.getTime()-known)/86400000;
+  let phase = (diffDays % synodic)/synodic;
+  if (phase<0) phase += 1;
+  return phase;
+}
+function moonLabel(phase){
+  const pct = Math.round((phase<=0.5 ? phase*2 : (1-phase)*2) * 100);
+  let name;
+  if (phase<0.03||phase>0.97) name='New';
+  else if (phase<0.22) name='Waxing crescent';
+  else if (phase<0.28) name='First quarter';
+  else if (phase<0.47) name='Waxing gibbous';
+  else if (phase<0.53) name='Full';
+  else if (phase<0.72) name='Waning gibbous';
+  else if (phase<0.78) name='Last quarter';
+  else name='Waning crescent';
+  return `${name} ${pct}%`;
+}
+
+function buildHourlyArrays(fData){
+  const times = fData.hourly.time, codes = fData.hourly.weather_code;
+  const temps = fData.hourly.temperature_2m, pops = fData.hourly.precipitation_probability;
+  let startIdx = times.findIndex(t => t >= fData.current.time);
+  if (startIdx < 0) startIdx = 0;
+  const build = (count) => {
+    const arr = [];
+    for (let i=0;i<count;i++){
+      const idx = startIdx+i;
+      if (idx>=times.length) break;
+      const info = wmoInfo(codes[idx]);
+      arr.push({ t: i===0?'Now':fmtHour(times[idx]), ic: info.ic, v: Math.round(temps[idx])+'°', p: (pops[idx]!=null?pops[idx]+'%':'') });
+    }
+    return arr;
+  };
+  return { short: build(10), full: build(24), startIdx };
+}
+function buildDaysArray(fData){
+  const d = fData.daily;
+  return d.time.map((iso,i) => ({
+    n: fmtWeekday(iso,i), ic: wmoInfo(d.weather_code[i]).ic,
+    rain: (d.precipitation_probability_max[i]!=null ? d.precipitation_probability_max[i]+'%' : '—'),
+    lo: Math.round(d.temperature_2m_min[i]), hi: Math.round(d.temperature_2m_max[i]), today: i===0
+  }));
+}
+
+function applyWeatherData(fData, aData){
+  const cur = fData.current, today = fData.daily;
+  const info = wmoInfo(cur.weather_code);
+
+  document.getElementById('mainTemp').textContent = Math.round(cur.temperature_2m)+'°';
+  document.getElementById('mainCond').textContent = info.txt;
+  document.querySelector('.temp-block .feels').textContent =
+    `Feels like ${Math.round(cur.apparent_temperature)}° · H:${Math.round(today.temperature_2m_max[0])}° L:${Math.round(today.temperature_2m_min[0])}°`;
+
+  const { short, full, startIdx } = buildHourlyArrays(fData);
+  hourlyShort = short; hourlyFull = full;
+  buildHourly('hourlyStrip', hourlyShort);
+  buildHourly('hourlyStripFull', hourlyFull);
+
+  days = buildDaysArray(fData);
+  renderDays(days);
+
+  const uvSlice = fData.hourly.uv_index.slice(startIdx, startIdx+24);
+  const nowUV = uvSlice[0] ?? 0;
+  let peakUV = nowUV, peakTime = fData.hourly.time[startIdx];
+  uvSlice.forEach((v,i) => { if (v>peakUV){ peakUV=v; peakTime=fData.hourly.time[startIdx+i]; } });
+  const uvL = uvLabel(nowUV);
+
+  lastWeather = {
+    tempC: cur.temperature_2m,
+    condTxt: info.txt,
+    wind: Math.round(cur.wind_speed_10m),
+    gust: Math.round(cur.wind_gusts_10m),
+    windDir: degToCompass(cur.wind_direction_10m),
+    rainPct: today.precipitation_probability_max[0] ?? 0,
+    rainMm: today.precipitation_sum[0] ?? 0,
+    humidity: Math.round(cur.relative_humidity_2m),
+    pressure: Math.round(cur.surface_pressure),
+    uv: Math.round(nowUV)
+  };
+  if (aData && aData.current){
+    lastWeather.aqi = Math.round(aData.current.us_aqi);
+    lastWeather.aqiLabel = aqiLabel(lastWeather.aqi).t;
+    lastWeather.pm25 = aData.current.pm2_5 != null ? Math.round(aData.current.pm2_5) : null;
+  }
+  if (typeof renderPersona === 'function') renderPersona();
+
+  const heroVals = document.querySelectorAll('.hero-strip .item .val');
+  heroVals[0].textContent = Math.round(cur.wind_speed_10m)+' km/h';
+  heroVals[1].textContent = Math.round(cur.relative_humidity_2m)+'%';
+  heroVals[2].textContent = (today.precipitation_probability_max[0] ?? 0)+'%';
+  heroVals[3].textContent = Math.round(nowUV)+' '+uvL.t.split(' ')[0];
+
+  const dcards = document.querySelectorAll('.grid2 .dcard');
+  const [windCard, humCard, uvCard, presCard] = dcards;
+  windCard.querySelector('.dc-val').innerHTML = `${Math.round(cur.wind_speed_10m)} <span style="font-size:12px;color:var(--text-2);">km/h</span>`;
+  const compassLine = windCard.querySelector('.compass line');
+  if (compassLine) compassLine.setAttribute('transform', `rotate(${Math.round(cur.wind_direction_10m)} 24 24)`);
+  windCard.querySelector('.dc-sub').textContent = `From ${degToCompass(cur.wind_direction_10m)} · Gusts ${Math.round(cur.wind_gusts_10m)} km/h`;
+
+  humCard.querySelector('.dc-val').innerHTML = `${Math.round(cur.relative_humidity_2m)}<span style="font-size:14px;">%</span>`;
+  const barFill = humCard.querySelector('.bar-fill');
+  if (barFill) barFill.style.width = Math.round(cur.relative_humidity_2m)+'%';
+  humCard.querySelector('.dc-sub').textContent = `Dew point ${Math.round(cur.dew_point_2m)}°`;
+
+  uvCard.querySelector('.dc-val').innerHTML = `${Math.round(nowUV)} <span style="font-size:12px;color:${uvL.c};">${uvL.t}</span>`;
+  const uvSpans = uvCard.querySelectorAll('.uv-scale span');
+  uvSpans.forEach((s,i) => s.classList.toggle('on', i < Math.round(Math.min(nowUV,11)/11*8)));
+  uvCard.querySelector('.dc-sub').textContent = `Peak ${Math.round(peakUV)} at ${fmtClock(peakTime)}`;
+
+  presCard.querySelector('.dc-val').innerHTML = `${Math.round(cur.surface_pressure)}<span style="font-size:12px;color:var(--text-2);"> hPa</span>`;
+  presCard.querySelector('.dc-sub').textContent = `Live reading for ${state.name}`;
+
+  if (aData && aData.current){
+    const aqi = Math.round(aData.current.us_aqi);
+    const pm25 = aData.current.pm2_5;
+    const aqiL = aqiLabel(aqi);
+    const pct = Math.min(100, Math.round(aqi/3));
+    const aqiCard = document.querySelector('.aqi-card');
+    const ring = aqiCard.querySelector('.aqi-ring');
+    ring.style.background = `conic-gradient(${aqiL.c} 0% ${pct}%, rgba(20,40,80,0.09) ${pct}% 100%)`;
+    ring.style.color = aqiL.c;
+    ring.querySelector('div').textContent = aqi;
+    aqiCard.querySelector('.aqi-t1').textContent = `Air Quality — ${aqiL.t}`;
+    aqiCard.querySelector('.aqi-t2').textContent = `PM2.5 ${pm25!=null?Math.round(pm25):'—'} µg/m³ · ${aqi<=100?'OK for most, sensitive groups take care':'Consider limiting outdoor exertion'}`;
+  }
+
+  const sunSpans = document.querySelectorAll('.sun-card .sun-row span b');
+  if (sunSpans.length===3){
+    sunSpans[0].textContent = fmtClock(today.sunrise[0]);
+    sunSpans[1].textContent = fmtClock(today.sunset[0]);
+    sunSpans[2].textContent = moonLabel(moonPhase(new Date()));
+  }
+
+  const precipEl = document.getElementById('precipOutlook');
+  if (precipEl) precipEl.textContent = `${today.precipitation_probability_max[0] ?? 0}% chance of rain today, with about ${today.precipitation_sum[0] ?? 0} mm expected in total.`;
+
+  const footerLoc = document.getElementById('footerLoc');
+  if (footerLoc) footerLoc.textContent = state.name;
+
+  if ((today.precipitation_probability_max[0] ?? 0) >= 70 && 'Notification' in window && Notification.permission==='granted' && !weatherNotifSent){
+    new Notification('Heavy rain likely today', { body: `${today.precipitation_probability_max[0]}% chance of rain in ${state.name}.` });
+    weatherNotifSent = true;
+  }
+}
+
+async function fetchAll(){
+  const heroDate = document.querySelector('.hero-date');
+  try{
+    const fUrl = `https://api.open-meteo.com/v1/forecast?latitude=${state.lat}&longitude=${state.lon}&current=temperature_2m,relative_humidity_2m,dew_point_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure&hourly=temperature_2m,precipitation_probability,weather_code,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,sunrise,sunset&timezone=auto&forecast_days=7`;
+    const aUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${state.lat}&longitude=${state.lon}&current=us_aqi,pm2_5,pm10&timezone=auto`;
+    const [fRes, aRes] = await Promise.all([fetch(fUrl), fetch(aUrl)]);
+    if (!fRes.ok) throw new Error('forecast request failed');
+    const fData = await fRes.json();
+    let aData = null;
+    if (aRes.ok){ try{ aData = await aRes.json(); }catch(e){} }
+    applyWeatherData(fData, aData);
+    heroDate.textContent = new Date().toLocaleDateString('en-US',{weekday:'short', day:'numeric', month:'short'}) + ' · Updated just now';
+  } catch(e){
+    console.error(e);
+    heroDate.textContent = new Date().toLocaleDateString('en-US',{weekday:'short', day:'numeric', month:'short'}) + ' · Live data unavailable, showing last known';
+  }
+}
+
+// ---------- location toast ----------
+// Shows a small floating notice any time the app asks for (or updates)
+// the user's location, so it's never requested silently.
+function showLocToast(message, icon){
+  const wrap = document.getElementById('locToastWrap');
+  if (!wrap) return;
+  const el = document.createElement('div');
+  el.className = 'loc-toast';
+  el.innerHTML = `<span class="lt-icon">${icon || '📍'}</span><span>${message}</span>`;
+  wrap.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 300);
+  }, 3200);
+}
+
+// Keeps every place that shows the current location (hero card, Local
+// reports section, etc.) in sync with state.name.
+function syncLocationDisplays(label){
+  const reportsLoc = document.getElementById('reportsLocLabel');
+  if (reportsLoc) reportsLoc.textContent = label;
+}
+
+// ---------- location search ----------
+const locInput = document.getElementById('locInput');
+const locResults = document.getElementById('locResults');
+const locGeoBtn = document.getElementById('locGeoBtn');
+const heroLocBtn = document.getElementById('heroLocBtn');
+const locPanel = document.getElementById('locPanel');
+const locLabelEl = document.getElementById('locLabel');
+const locNote = document.getElementById('locNote');
+let geoDebounce = null;
+
+heroLocBtn.addEventListener('click', () => {
+  locPanel.style.display = locPanel.style.display === 'none' ? 'block' : 'none';
+});
+locInput.addEventListener('input', () => {
+  clearTimeout(geoDebounce);
+  const q = locInput.value.trim();
+  if (q.length < 2){ locResults.innerHTML=''; return; }
+  geoDebounce = setTimeout(() => searchLocations(q), 400);
+});
+async function searchLocations(q){
+  try{
+    const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json`);
+    const data = await res.json();
+    const results = data.results || [];
+    if (!results.length){ locResults.innerHTML = '<div class="loc-result" style="cursor:default;">No matches found</div>'; return; }
+    locResults.innerHTML = results.map((r,i) => {
+      const label = [r.name, r.admin1, r.country].filter(Boolean).join(', ');
+      return `<button class="loc-result" data-idx="${i}">${label}</button>`;
+    }).join('');
+    locResults.querySelectorAll('.loc-result').forEach((btn,i) => {
+      btn.addEventListener('click', () => selectLocation(results[i].latitude, results[i].longitude, [results[i].name, results[i].admin1].filter(Boolean).join(', ')));
+    });
+  } catch(e){
+    locResults.innerHTML = '<div class="loc-result" style="cursor:default;">Search unavailable — check connection</div>';
+  }
+}
+function selectLocation(lat, lon, label){
+  state = { lat, lon, name: label };
+  locLabelEl.textContent = label;
+  locPanel.style.display = 'none';
+  locInput.value = '';
+  locResults.innerHTML = '';
+  locNote.style.display = label.toLowerCase().includes('golaghat') ? 'none' : 'block';
+  weatherNotifSent = false;
+  syncLocationDisplays(label);
+  fetchAll();
+}
+locGeoBtn.addEventListener('click', () => {
+  if (!navigator.geolocation){ alert('Geolocation not supported on this device.'); return; }
+  showLocToast('Requesting your location — your device will ask for permission.');
+  locGeoBtn.textContent = '…';
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const { latitude, longitude } = pos.coords;
+    let label = 'Current location';
+    try{
+      const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+      const d = await r.json();
+      label = [d.city || d.locality, d.principalSubdivision].filter(Boolean).join(', ') || label;
+    } catch(e){}
+    locGeoBtn.textContent = '📍';
+    showLocToast(`Location set to ${label}.`, '✅');
+    selectLocation(latitude, longitude, label);
+  }, () => {
+    locGeoBtn.textContent = '📍';
+    showLocToast('Location permission denied — using your last known location.', '⚠️');
+    alert('Location permission denied.');
+  }, { timeout: 8000 });
+});
+
+// Auto-detect the user's location via an IP-based geolocation API (no
+// permission prompt). Falls back to the default Golaghat location above
+// if the lookup fails or is blocked.
+async function detectLocationByIP(){
+  showLocToast('Finding your approximate location from your network (no permission needed)…', '🌐');
+  try{
+    const res = await fetch('https://ipapi.co/json/');
+    if (!res.ok) throw new Error('ip lookup failed: ' + res.status);
+    const d = await res.json();
+    if (d && d.latitude != null && d.longitude != null){
+      const label = [d.city, d.region].filter(Boolean).join(', ') || d.country_name || state.name;
+      state = { lat: d.latitude, lon: d.longitude, name: label };
+      locLabelEl.textContent = label;
+      locNote.style.display = label.toLowerCase().includes('golaghat') ? 'none' : 'block';
+      syncLocationDisplays(label);
+      showLocToast(`Showing weather and local reports for ${label}.`, '📍');
+    }
+  } catch(e){
+    console.warn('IP-based location lookup failed, using default location.', e);
+    showLocToast('Could not detect your location — showing Golaghat, Assam by default.', '⚠️');
+    syncLocationDisplays(state.name);
+  }
+}
+detectLocationByIP().then(fetchAll);
+
+// ---------- persona insights ----------
+const personaTabs = document.getElementById('personaTabs');
+const personaInsight = document.getElementById('personaInsight');
+let activePersona = 'farmer';
+
+function currentConditions(){
+  if (lastWeather) return lastWeather;
+  // fallback to the same defaults shown before live data has loaded
+  return { tempC:27, condTxt:'Cloudy, light haze', wind:11, gust:19, windDir:'NE', rainPct:40, rainMm:6, humidity:78, pressure:1009, uv:4 };
+}
+
+const piIconWind = `<svg viewBox="0 0 24 24" fill="none"><path d="M9.6 4.6a2.4 2.4 0 1 1 1.7 4.1H3M14 19.4a2.4 2.4 0 1 0 1.7-4.1H3M17.4 9.6a2.4 2.4 0 1 1 1.7 4.1H3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+const piIconRain = `<svg viewBox="0 0 24 24" fill="none"><path d="M7 16.5a4.5 4.5 0 0 1 .7-8.9 6 6 0 0 1 11.4 1.9A4 4 0 0 1 18 17H7Z" stroke="currentColor" stroke-width="1.7"/><line x1="9" y1="19" x2="8" y2="22" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><line x1="13" y1="19" x2="12" y2="22" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><line x1="17" y1="19" x2="16" y2="22" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
+const piIconCheck = `<svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+function windRow(c){
+  let t;
+  if (c.gust >= 30) t = `<b>Wind is strong</b> — ${c.wind} km/h from the ${c.windDir}, gusting to ${c.gust} km/h. Hold off on spraying and anything involving loose canopy or tarps.`;
+  else if (c.gust >= 18) t = `<b>Wind is moderate</b> — ${c.wind} km/h from the ${c.windDir}, gusting to ${c.gust} km/h. Fine for most fieldwork, but pesticide spray may drift.`;
+  else t = `<b>Wind is calm</b> — ${c.wind} km/h from the ${c.windDir}, gusting to ${c.gust} km/h. Good conditions for spraying and general fieldwork.`;
+  return `<div class="pi-row">${piIconWind}<div class="pi-t">${t}</div></div>`;
+}
+function waterRow(c){
+  let t;
+  if (c.rainPct >= 70) t = `<b>Heavy rain likely</b> — ${c.rainPct}% chance, around ${c.rainMm} mm expected. Good for standing crops needing water, but risky for freshly sown seed or grain left out to dry.`;
+  else if (c.rainPct >= 35) t = `<b>Rain is possible</b> — ${c.rainPct}% chance, ~${c.rainMm} mm expected. Keep an eye on the sky before spraying or harvesting.`;
+  else t = `<b>Mostly dry</b> — only ${c.rainPct}% chance of rain. Fields may need irrigation if soil moisture is low; conditions are safe for spraying and harvest work.`;
+  return `<div class="pi-row">${piIconRain}<div class="pi-t">${t}</div></div>`;
+}
+function verdictFor(c, kind){
+  const windRisk = c.gust >= 30 ? 2 : (c.gust >= 18 ? 1 : 0);
+  const rainRisk = c.rainPct >= 70 ? 2 : (c.rainPct >= 35 ? 1 : 0);
+  const risk = Math.max(windRisk, rainRisk);
+  if (risk >= 2) return { cls:'bad', label: kind==='fishing' ? 'Not safe today' : 'Hold off today' };
+  if (risk === 1) return { cls:'caution', label:'Proceed with caution' };
+  return { cls:'ok', label: kind==='fishing' ? 'Safe to go out' : 'Safe today' };
+}
+
+function renderPersona(){
+  if (!personaInsight) return;
+  const c = currentConditions();
+  const v = verdictFor(c, activePersona==='fisherman' ? 'fishing' : 'other');
+  let head, rows;
+
+  if (activePersona === 'farmer'){
+    head = 'For farmers';
+    rows = windRow(c) + waterRow(c) +
+      `<div class="pi-row">${piIconCheck}<div class="pi-t"><b>Humidity ${c.humidity}%</b> — ${c.humidity>=80 ? 'high humidity raises fungal/disease risk on standing crops, watch leaves closely.' : 'within a normal range for most crops.'}</div></div>`;
+  } else if (activePersona === 'fisherman'){
+    head = 'For fishermen';
+    rows = windRow(c) + waterRow(c) +
+      `<div class="pi-row">${piIconCheck}<div class="pi-t"><b>${c.gust>=30?'Choppy water expected':'Waters should stay manageable'}</b> — gusts to ${c.gust} km/h ${c.gust>=30?'can churn up open water; small boats should stay closer to shore.':'are unlikely to cause dangerous swell for small craft.'}</div></div>`;
+  } else if (activePersona === 'commuter'){
+    head = 'For commuters';
+    rows = windRow(c) + waterRow(c) +
+      `<div class="pi-row">${piIconCheck}<div class="pi-t"><b>${c.rainPct>=50?'Roads may get slick':'Roads should stay mostly clear'}</b> — plan a little extra travel time ${c.rainPct>=50?'and carry a rain cover for two-wheelers.':'but no major delays expected.'}</div></div>`;
+  } else if (activePersona === 'student'){
+    head = 'For students';
+    rows = waterRow(c) +
+      `<div class="pi-row">${piIconCheck}<div class="pi-t"><b>${c.rainPct>=50?'Carry an umbrella or raincoat':'Light layers are enough'}</b> for the walk to school or college today.</div></div>` +
+      `<div class="pi-row">${piIconCheck}<div class="pi-t"><b>UV index ${c.uv}</b> — ${c.uv>=6?'sunscreen is a good idea if you\'re outside at midday.':'no special sun precautions needed.'}</div></div>`;
+  } else {
+    head = 'For you';
+    rows = windRow(c) + waterRow(c) +
+      `<div class="pi-row">${piIconCheck}<div class="pi-t"><b>Overall</b> — ${c.tempC!=null?Math.round(c.tempC)+'°, ':''}${c.condTxt||'conditions look typical for the season'}.</div></div>`;
+  }
+
+  personaInsight.innerHTML = `
+    <div class="pi-head">${head}</div>
+    <span class="pi-verdict ${v.cls}">${v.label}</span>
+    <div class="pi-reasons">${rows}</div>
+  `;
+}
+
+if (personaTabs){
+  personaTabs.querySelectorAll('.persona-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      personaTabs.querySelectorAll('.persona-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activePersona = btn.dataset.persona;
+      renderPersona();
+    });
+  });
+}
+renderPersona();
+
+// ---------- chat ----------
+const chatLog = document.getElementById('chatLog');
+const chatInput = document.getElementById('chatInput');
+const chatSend = document.getElementById('chatSend');
+
+function addMsg(text, who){
+  const d = document.createElement('div');
+  d.className = 'msg ' + who;
+  d.textContent = text;
+  chatLog.appendChild(d);
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+function reply(q){
+  const s = q.toLowerCase();
+  if (s.includes('farm') || s.includes('crop') || s.includes('sow') || s.includes('spray') || s.includes('irrigat') || s.includes('harvest')){
+    const c = (typeof currentConditions === 'function') ? currentConditions() : { wind:11, gust:19, windDir:'NE', rainPct:40, rainMm:6, humidity:78 };
+    const windOk = c.gust < 18;
+    const windCaution = c.gust >= 18 && c.gust < 30;
+    const rainHeavy = c.rainPct >= 70;
+    const rainSome = c.rainPct >= 35 && c.rainPct < 70;
+    let verdict;
+    if (c.gust >= 30 || rainHeavy) verdict = "I'd hold off on fieldwork today.";
+    else if (windCaution || rainSome) verdict = "Should be workable today, just plan around the weather.";
+    else verdict = "Looks like a safe day for most farm work.";
+    const windPart = windOk
+      ? `Wind is calm — ${c.wind} km/h from the ${c.windDir}, gusts to ${c.gust} km/h — good for spraying without drift.`
+      : (windCaution
+        ? `Wind is moderate — ${c.wind} km/h from the ${c.windDir}, gusts to ${c.gust} km/h — spray may drift, so time it for a calmer window.`
+        : `Wind is strong — ${c.wind} km/h from the ${c.windDir}, gusts to ${c.gust} km/h — not safe for spraying today.`);
+    const waterPart = rainHeavy
+      ? `${c.rainPct}% chance of rain with ~${c.rainMm} mm expected — good for standing crops, but risky for sowing seed or drying harvest.`
+      : (rainSome
+        ? `${c.rainPct}% chance of rain, ~${c.rainMm} mm expected — keep an eye on the sky before spraying.`
+        : `Only ${c.rainPct}% chance of rain — dry enough for spraying and harvest, but fields may need irrigation.`);
+    return `${verdict} ${windPart} ${waterPart}`;
+  }
+  const c = currentConditions();
+  const place = (typeof state !== 'undefined' && state.name) ? state.name : 'Golaghat';
+
+  if (s.includes('air quality') || s.includes('aqi') || s.includes('pollution')){
+    if (c.aqi != null) return `Air quality in ${place} is ${c.aqi} (${c.aqiLabel})${c.pm25!=null ? `, PM2.5 around ${c.pm25} µg/m³` : ''}. ${c.aqi>100 ? 'Consider limiting outdoor exertion, especially for sensitive groups.' : 'OK for most people to be outside.'}`;
+    return "Air quality data hasn't loaded yet — check the Air Quality card on the home screen in a moment.";
+  }
+  if (s.includes('humid')) return `Humidity is at ${c.humidity}% right now in ${place}.`;
+  if (s.includes('rain')) return `${c.rainPct}% chance of rain today in ${place}, with about ${c.rainMm} mm expected. ${c.rainPct>=50 ? "Worth carrying an umbrella." : "Should stay mostly dry."}`;
+  if (s.includes('wear') || s.includes('clothes')) return `It's ${Math.round(c.tempC)}° and ${c.humidity}% humidity, with a ${c.rainPct}% rain chance — light breathable layers, and ${c.rainPct>=40 ? 'bring a compact umbrella or light rain jacket' : "you likely won't need rain gear"}.`;
+  if (s.includes('weekend')){
+    if (typeof days !== 'undefined' && days && days.length){
+      const sat = days.find(d => d.n === 'Sat');
+      const sun = days.find(d => d.n === 'Sun');
+      if (sat || sun){
+        const parts = [];
+        if (sat) parts.push(`Saturday: high ${sat.hi}°, ${sat.rain} rain chance`);
+        if (sun) parts.push(`Sunday: high ${sun.hi}°, ${sun.rain} rain chance`);
+        return `Weekend outlook — ${parts.join('; ')}.`;
+      }
+    }
+    return "I don't have the weekend forecast loaded yet — try again in a moment.";
+  }
+  if (s.includes('wind')) return `Wind is ${c.wind} km/h from the ${c.windDir}, with gusts up to ${c.gust} km/h.`;
+  if (s.includes('uv') || s.includes('sun')) return `UV index is ${c.uv} right now. ${c.uv>=6 ? 'That\'s high — sunscreen and shade are a good idea.' : c.uv>=3 ? "That's moderate — sunscreen's a good idea if you're out over midday." : "That's low, nothing much to worry about."}`;
+  if (s.includes('tomorrow')){
+    if (typeof days !== 'undefined' && days && days[1]){
+      const t = days[1];
+      return `Tomorrow: high ${t.hi}°, low ${t.lo}°, ${t.rain} chance of rain.`;
+    }
+    return "I don't have tomorrow's forecast loaded yet — try again in a moment.";
+  }
+  return `Right now it's ${Math.round(c.tempC)}° and ${c.condTxt} in ${place}, with ${c.humidity}% humidity. Ask me about rain chances, wind, UV, air quality, farming conditions, or what to wear.`;
+}
+
+function sendChat(text){
+  const q = (text ?? chatInput.value).trim();
+  if (!q) return;
+  addMsg(q, 'user');
+  chatInput.value = '';
+  setTimeout(() => addMsg(reply(q), 'bot'), 450);
+}
+chatSend.addEventListener('click', () => sendChat());
+chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+document.querySelectorAll('[data-ask]').forEach(chip => chip.addEventListener('click', () => sendChat(chip.dataset.ask)));
+
+// ---------- voice commands ----------
+(function(){
+  const voiceFab = document.getElementById('voiceFab');
+  const voicePanel = document.getElementById('voicePanel');
+  const voiceStatusText = document.getElementById('voiceStatusText');
+  const voiceTranscript = document.getElementById('voiceTranscript');
+  const voicePanelClose = document.getElementById('voicePanelClose');
+  const wakeToggle = document.getElementById('wakeToggle');
+  const wakeToggleLabel = document.getElementById('wakeToggleLabel');
+
+  const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+  let listening = false;
+
+  // ---- wake word ("Hey WeatherGPT") ----
+  const WAKE_PHRASES = ['hey weather gpt','hey weathergpt','hey weather g p t','ok weather gpt','okay weather gpt','hi weather gpt','hey weather'];
+  let wakeRecognition = null;
+  let wakeEnabled = localStorage.getItem('wg_wake_enabled') === '1';
+  let wakeStarting = false;
+
+  function speechLangFor(){
+    const savedLang = localStorage.getItem('wg_lang');
+    const speechLangMap = { en:'en-US', hi:'hi-IN', as:'en-IN', bn:'bn-IN', gu:'gu-IN', kn:'kn-IN', ml:'ml-IN', mr:'mr-IN', pa:'pa-IN', ta:'ta-IN', te:'te-IN', ur:'ur-IN', ne:'ne-NP', es:'es-ES', fr:'fr-FR', de:'de-DE', pt:'pt-PT', 'zh-CN':'zh-CN', ar:'ar-SA', ja:'ja-JP', ru:'ru-RU' };
+    return speechLangMap[savedLang] || 'en-US';
+  }
+
+  function setWakeUI(){
+    if (!wakeToggle) return;
+    wakeToggle.classList.toggle('on', wakeEnabled);
+    if (wakeToggleLabel) wakeToggleLabel.textContent = wakeEnabled ? '"Hey WeatherGPT" is on' : 'Wake word off';
+  }
+
+  function startWakeListening(){
+    if (!SpeechRecognitionCtor || !wakeEnabled || listening || wakeStarting) return;
+    wakeStarting = true;
+    try{
+      wakeRecognition = new SpeechRecognitionCtor();
+      wakeRecognition.lang = speechLangFor();
+      wakeRecognition.interimResults = true;
+      wakeRecognition.continuous = true;
+      wakeRecognition.maxAlternatives = 1;
+
+      wakeRecognition.onresult = (event) => {
+        for (let i = event.resultIndex; i < event.results.length; i++){
+          const t = event.results[i][0].transcript.toLowerCase();
+          if (WAKE_PHRASES.some(p => t.includes(p))){
+            try{ wakeRecognition.onend = null; wakeRecognition.stop(); }catch(e){}
+            voiceFab.classList.add('woke');
+            setTimeout(() => voiceFab.classList.remove('woke'), 600);
+            startListening();
+            return;
+          }
+        }
+      };
+      wakeRecognition.onerror = (event) => {
+        // 'no-speech' / 'aborted' happen constantly with continuous listening — ignore.
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed'){
+          wakeEnabled = false;
+          localStorage.setItem('wg_wake_enabled', '0');
+          setWakeUI();
+          setPanel('Wake word off', 'Microphone access was blocked, so the wake word was turned off.');
+        }
+      };
+      wakeRecognition.onend = () => {
+        wakeStarting = false;
+        if (wakeEnabled && !listening) setTimeout(startWakeListening, 400);
+      };
+      wakeRecognition.start();
+    }catch(e){
+      wakeStarting = false;
+    }
+  }
+
+  function stopWakeListening(){
+    if (wakeRecognition){
+      try{ wakeRecognition.onend = null; wakeRecognition.stop(); }catch(e){}
+    }
+  }
+
+  if (wakeToggle){
+    setWakeUI();
+    wakeToggle.addEventListener('click', () => {
+      if (!SpeechRecognitionCtor){
+        setPanel('Not supported', 'Wake word needs Chrome, Edge, or Safari with microphone access.');
+        return;
+      }
+      wakeEnabled = !wakeEnabled;
+      localStorage.setItem('wg_wake_enabled', wakeEnabled ? '1' : '0');
+      setWakeUI();
+      if (wakeEnabled){
+        startWakeListening();
+        setPanel('Wake word on', 'Say "Hey WeatherGPT" any time to start a voice command.');
+        speak('Wake word on. Say Hey WeatherGPT any time.');
+      } else {
+        stopWakeListening();
+        setPanel('Wake word off', 'Tap the mic to give a voice command.');
+      }
+    });
+  }
+
+  // City names people might ask for by voice — used so "search Mumbai"
+  // and "Mumbai" (bare) both work without requiring the word "search".
+  function extractLocation(text, triggers){
+    for (const t of triggers){
+      const idx = text.indexOf(t);
+      if (idx !== -1) return text.slice(idx + t.length).trim();
+    }
+    return null;
+  }
+
+  function speak(text){
+    if (!('speechSynthesis' in window)) return;
+    try{
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1;
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  function setPanel(status, transcript){
+    voicePanel.classList.add('show');
+    voiceStatusText.textContent = status;
+    if (transcript !== undefined) voiceTranscript.textContent = transcript;
+  }
+
+  function handleCommand(raw){
+    const text = raw.trim();
+    const s = text.toLowerCase();
+    setPanel('Heard you', `"${text}"`);
+
+    // navigation
+    const navMap = [
+      [['forecast', '7 day', 'seven day'], 'forecast'],
+      [['alert', 'warning'], 'alert'],
+      [['climate'], 'climate'],
+      [['about', 'assistant tab'], 'about'],
+      [['home', 'main screen', 'go back'], 'home'],
+    ];
+    for (const [keys, view] of navMap){
+      if (keys.some(k => s.includes(k))){
+        goto(view);
+        setPanel('Done', `Opened ${view}.`);
+        speak(`Showing ${view}.`);
+        return;
+      }
+    }
+
+    // refresh
+    if (s.includes('refresh') || s.includes('update weather') || s.includes('reload')){
+      refreshBtn.click();
+      setPanel('Done', 'Refreshing weather data.');
+      speak('Refreshing the weather.');
+      return;
+    }
+
+    // logout
+    if (s.includes('log out') || s.includes('logout') || s.includes('sign out')){
+      const lb = document.getElementById('logoutBtn');
+      if (lb) lb.click();
+      setPanel('Done', 'Logged out.');
+      return;
+    }
+
+    // use current location
+    if (s.includes('current location') || s.includes('my location') || s.includes('near me')){
+      locGeoBtn.click();
+      setPanel('Done', 'Using your current location.');
+      speak('Getting your current location.');
+      return;
+    }
+
+    // ---- safety check-in ----
+    if (['mark me safe', 'mark myself safe', "i'm safe", 'im safe', 'i am safe', 'check in safe', 'safe check in'].some(p => s.includes(p))){
+      goto('home');
+      const btn = document.getElementById('btnImSafe');
+      if (btn) btn.click();
+      setPanel('Done', "Marked you as safe.");
+      speak("You're marked as safe.");
+      return;
+    }
+    if (['need help', "i need help", 'send help', 'emergency help', 'help me', "i'm in danger", 'im in danger'].some(p => s.includes(p))){
+      goto('home');
+      const btn = document.getElementById('btnNeedHelp');
+      if (btn) btn.click();
+      setPanel('Done', "Marked that you need help.");
+      speak("I've marked that you need help.");
+      return;
+    }
+    if (['call emergency', 'emergency call', 'call for help', 'dial emergency', 'call 112'].some(p => s.includes(p))){
+      const btn = document.getElementById('ebCall');
+      if (btn) btn.click();
+      setPanel('Done', 'Opening emergency call to 112.');
+      speak('Calling emergency services.');
+      return;
+    }
+
+    // ---- siren / alert mute ----
+    if (['mute siren', 'mute alert', 'silence siren', 'silence alert', 'stop siren', 'stop the alarm', 'turn off siren', 'turn off alarm'].some(p => s.includes(p))){
+      if (typeof setSiren === 'function') setSiren(false);
+      setPanel('Done', 'Siren muted.');
+      speak('Siren muted.');
+      return;
+    }
+    if (['unmute siren', 'unmute alert', 'turn on siren', 'turn on alarm'].some(p => s.includes(p))){
+      if (typeof setSiren === 'function') setSiren(true);
+      setPanel('Done', 'Siren unmuted.');
+      speak('Siren turned back on.');
+      return;
+    }
+
+    // ---- notifications ----
+    if (['enable notification', 'turn on notification', 'enable alert', 'turn on alert'].some(p => s.includes(p))){
+      const btn = document.getElementById('notifBtn');
+      if (btn) btn.click();
+      setPanel('Done', 'Requesting notification permission.');
+      speak('Turning on notifications.');
+      return;
+    }
+
+    // ---- share safety status ----
+    if (s.includes('whatsapp')){
+      const btn = document.getElementById('shareWA');
+      if (btn) btn.click();
+      setPanel('Done', 'Opening WhatsApp share.');
+      speak('Sharing your status on WhatsApp.');
+      return;
+    }
+    if (s.includes('sms') || s.includes('text message') || (s.includes('share') && s.includes('text'))){
+      const btn = document.getElementById('shareSMS');
+      if (btn) btn.click();
+      setPanel('Done', 'Opening SMS share.');
+      speak('Sharing your status by text message.');
+      return;
+    }
+
+    // ---- post a community comment: "post a comment <text>" / "share update <text>" ----
+    const commentTriggers = ['post a comment', 'post comment', 'add a comment', 'share an update saying', 'share update', 'post update'];
+    const commentText = extractLocation(s, commentTriggers);
+    if (commentText && commentText.length > 1){
+      const input = document.getElementById('commentInput');
+      if (input && typeof postComment === 'function'){
+        input.value = text.slice(text.toLowerCase().lastIndexOf(commentText));
+        postComment();
+        goto('home');
+        setPanel('Done', 'Posted your update to the community feed.');
+        speak('Posted your update.');
+        return;
+      }
+    }
+
+    // ---- switch persona (Farmer / Fisherman / Commuter / Student / General public) ----
+    const personaMap = [
+      [['farmer'], 'farmer'],
+      [['fisherman'], 'fisherman'],
+      [['commuter'], 'commuter'],
+      [['student'], 'student'],
+      [['general public', 'general view'], 'general'],
+    ];
+    for (const [keys, persona] of personaMap){
+      if (keys.some(k => s.includes(k))){
+        const btn = document.querySelector(`.persona-btn[data-persona="${persona}"]`);
+        if (btn){
+          goto('home');
+          btn.click();
+          setPanel('Done', `Switched to ${persona} view.`);
+          speak(`Switched to ${persona} view.`);
+          return;
+        }
+      }
+    }
+
+    // ---- switch app language: "switch to Hindi", "change language to Assamese" ----
+    const langTriggers = ['switch language to', 'change language to', 'switch to', 'change to', 'speak in', 'talk in'];
+    const langName = extractLocation(s, langTriggers);
+    if (langName && langName.length > 1 && typeof window.__wgApplyLanguageByName === 'function'){
+      const result = window.__wgApplyLanguageByName(langName);
+      if (result){
+        setPanel('Done', `Language switched.`);
+        speak(`Switching to ${langName}.`);
+        return;
+      }
+    }
+
+    // ---- direct weather data questions (temperature, humidity, UV, air quality) ----
+    if (s.includes('temperature') || s.includes('how hot') || s.includes('how cold') || s.includes("what's the weather") || s.includes('whats the weather')){
+      const answer = reply(text);
+      setPanel('Answered', answer);
+      speak(answer);
+      return;
+    }
+
+    // change location — "search for X", "search X", "change location to X", "set location to X", "weather in X"
+    const locTriggers = ['change location to', 'set location to', 'search for', 'search location', 'search', 'weather in', 'weather for', 'location to'];
+    const loc = extractLocation(s, locTriggers);
+    if (loc && loc.length > 1){
+      locPanel.style.display = 'block';
+      locInput.value = text.slice(text.toLowerCase().lastIndexOf(loc));
+      locInput.dispatchEvent(new Event('input'));
+      setPanel('Searching', `Looking up "${locInput.value}"…`);
+      speak(`Searching for ${locInput.value}.`);
+      return;
+    }
+
+    // otherwise, treat it as a weather question for the chat assistant
+    goto('about');
+    sendChat(text);
+    const answer = reply(text);
+    setTimeout(() => { setPanel('Answered', answer); speak(answer); }, 460);
+  }
+
+  function startListening(){
+    if (!SpeechRecognitionCtor){
+      setPanel('Not supported', 'Voice commands need Chrome, Edge, or Safari with microphone access.');
+      return;
+    }
+    if (listening){ stopListening(); return; }
+    recognition = new SpeechRecognitionCtor();
+    recognition.lang = speechLangFor();
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognition.continuous = false;
+
+    recognition.onstart = () => {
+      listening = true;
+      voiceFab.classList.add('listening');
+      setPanel('Listening…', '');
+    };
+    recognition.onresult = (event) => {
+      let interim = '';
+      let final = '';
+      for (let i = event.resultIndex; i < event.results.length; i++){
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) final += t; else interim += t;
+      }
+      if (interim) setPanel('Listening…', interim);
+      if (final) handleCommand(final);
+    };
+    recognition.onerror = (event) => {
+      setPanel('Error', event.error === 'not-allowed' ? 'Microphone access was blocked.' : `Could not hear you (${event.error}).`);
+    };
+    recognition.onend = () => {
+      listening = false;
+      voiceFab.classList.remove('listening');
+      if (wakeEnabled) setTimeout(startWakeListening, 500);
+    };
+    try{ recognition.start(); }catch(e){ setPanel('Error', 'Could not start the microphone.'); }
+  }
+
+  function stopListening(){
+    if (recognition) recognition.stop();
+    listening = false;
+    voiceFab.classList.remove('listening');
+  }
+
+  voiceFab.addEventListener('click', () => {
+    stopWakeListening();
+    startListening();
+  });
+  voicePanelClose.addEventListener('click', () => { voicePanel.classList.remove('show'); stopListening(); });
+
+  window.__wgStartWakeListening = startWakeListening;
+  window.__wgStopWakeListening = stopWakeListening;
+  window.__wgSetWakeToggleVisible = function(show){
+    if (wakeToggle) wakeToggle.style.display = show ? 'flex' : 'none';
+  };
+})();
+</script>
+
+<!-- ===================== LOGIN + TRANSLATION ===================== -->
+<div id="google_translate_element"></div>
+<script>
+(function(){
+
+  // ---- Language list: all 22 scheduled Indian languages + several
+  // more state/regional languages, plus major world languages.
+  // Codes match Google Translate's supported language codes.
+  const INDIAN_LANGS = [
+    ['en','English'],
+    ['hi','हिन्दी (Hindi)'],
+    ['as','অসমীয়া (Assamese)'],
+    ['bn','বাংলা (Bengali)'],
+    ['gu','ગુજરાતી (Gujarati)'],
+    ['kn','ಕನ್ನಡ (Kannada)'],
+    ['ml','മലയാളം (Malayalam)'],
+    ['mr','मराठी (Marathi)'],
+    ['or','ଓଡ଼ିଆ (Odia)'],
+    ['pa','ਪੰਜਾਬੀ (Punjabi)'],
+    ['ta','தமிழ் (Tamil)'],
+    ['te','తెలుగు (Telugu)'],
+    ['ur','اردو (Urdu)'],
+    ['sd','سنڌي (Sindhi)'],
+    ['sa','संस्कृतम् (Sanskrit)'],
+    ['ne','नेपाली (Nepali)'],
+    ['gom','कोंकणी (Konkani)'],
+    ['mai','मैथिली (Maithili)'],
+    ['doi','डोगरी (Dogri)'],
+    ['bho','भोजपुरी (Bhojpuri)'],
+    ['mni-Mtei','মৈতৈলোন্ (Manipuri)'],
+    ['brx','बड़ो (Bodo)'],
+    ['sat','ᱥᱟᱱᱛᱟᱲᱤ (Santali)'],
+    ['lus','Mizo'],
+    ['kha','Khasi'],
+    ['tcy','ತುಳು (Tulu)'],
+  ];
+  const WORLD_LANGS = [
+    ['es','Español'],['fr','Français'],['de','Deutsch'],['pt','Português'],
+    ['zh-CN','中文'],['ar','العربية'],['ja','日本語'],['ru','Русский'],
+    ['id','Bahasa Indonesia'],['sw','Kiswahili'],
+  ];
+
+  function buildOptions(select){
+    const grp1 = document.createElement('optgroup');
+    grp1.label = 'Indian languages';
+    INDIAN_LANGS.forEach(([code,label]) => {
+      const o = document.createElement('option');
+      o.value = code; o.textContent = label;
+      grp1.appendChild(o);
+    });
+    const grp2 = document.createElement('optgroup');
+    grp2.label = 'Other languages';
+    WORLD_LANGS.forEach(([code,label]) => {
+      const o = document.createElement('option');
+      o.value = code; o.textContent = label;
+      grp2.appendChild(o);
+    });
+    select.appendChild(grp1);
+    select.appendChild(grp2);
+  }
+  const loginLangSelect = document.getElementById('loginLangSelect');
+  const appLangSelect = document.getElementById('appLangSelect');
+  buildOptions(loginLangSelect);
+  buildOptions(appLangSelect);
+
+  // ---- Google Translate website widget (free, no API key) ----
+  window.googleTranslateElementInit = function(){
+    new google.translate.TranslateElement({
+      pageLanguage: 'en',
+      includedLanguages: INDIAN_LANGS.concat(WORLD_LANGS).map(l => l[0]).join(','),
+      autoDisplay: false
+    }, 'google_translate_element');
+    const saved = localStorage.getItem('wg_lang');
+    if (saved && saved !== 'en') setTimeout(() => applyLanguage(saved), 600);
+  };
+  const gts = document.createElement('script');
+  gts.src = 'https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+  gts.onerror = function(){
+    console.error('Google Translate script failed to load. Check your internet connection, or that translate.google.com is not blocked by an ad blocker / firewall / browser extension.');
+  };
+  document.body.appendChild(gts);
+
+  // Safety net: if the widget hasn't shown up after a few seconds, warn in console
+  // (translation will silently do nothing otherwise, which is hard to debug).
+  setTimeout(function(){
+    if (!document.querySelector('#google_translate_element select.goog-te-combo')){
+      console.warn('Google Translate widget did not initialize. Common causes: page opened via a local file:// path with no internet access at that moment, an ad blocker / privacy extension blocking translate.google.com, or a corporate/network firewall.');
+    }
+  }, 5000);
+
+  function applyLanguage(code){
+    localStorage.setItem('wg_lang', code);
+    loginLangSelect.value = code;
+    appLangSelect.value = code;
+    const combo = document.querySelector('#google_translate_element select.goog-te-combo');
+    if (combo){
+      combo.value = code;
+      combo.dispatchEvent(new Event('change'));
+    } else {
+      // widget hasn't finished loading yet — retry shortly
+      setTimeout(() => applyLanguage(code), 500);
+    }
+  }
+  loginLangSelect.addEventListener('change', () => applyLanguage(loginLangSelect.value));
+  appLangSelect.addEventListener('change', () => applyLanguage(appLangSelect.value));
+  const savedLang = localStorage.getItem('wg_lang');
+  if (savedLang){ loginLangSelect.value = savedLang; appLangSelect.value = savedLang; }
+
+  // ---- Bridge so voice commands can switch language by spoken name ----
+  const ALL_LANGS = INDIAN_LANGS.concat(WORLD_LANGS);
+  window.__wgApplyLanguageByName = function(spokenName){
+    const q = spokenName.trim().toLowerCase();
+    if (!q) return false;
+    const match = ALL_LANGS.find(([code, label]) => {
+      const plain = label.toLowerCase();
+      const english = (plain.match(/\(([^)]+)\)/) || [,plain])[1]; // text inside parens, e.g. "hindi"
+      return plain.includes(q) || english.includes(q) || q.includes(english) || code.toLowerCase() === q;
+    });
+    if (!match) return false;
+    applyLanguage(match[0]);
+    return match[1];
+  };
+
+  // ---- Simple client-side login / signup (stored in this browser only) ----
+  function getUsers(){ try{ return JSON.parse(localStorage.getItem('wg_users')||'{}'); }catch(e){ return {}; } }
+  function saveUsers(u){ localStorage.setItem('wg_users', JSON.stringify(u)); }
+  function setSession(name){ localStorage.setItem('wg_session', name); }
+  function clearSession(){ localStorage.removeItem('wg_session'); }
+  function getSession(){ return localStorage.getItem('wg_session'); }
+  function saveLastUser(name){ localStorage.setItem('wg_last_user', name); }
+  function getLastUser(){ return localStorage.getItem('wg_last_user') || ''; }
+
+  const loginScreen = document.getElementById('loginScreen');
+  const appRoot = document.getElementById('appRoot');
+  const welcomeUser = document.getElementById('welcomeUser');
+
+  function showApp(name){
+    loginScreen.classList.add('hidden');
+    appRoot.classList.remove('app-hidden');
+    welcomeUser.textContent = name;
+    const vf = document.getElementById('voiceFab');
+    if (vf) vf.style.display = 'flex';
+    if (window.__wgSetWakeToggleVisible) window.__wgSetWakeToggleVisible(true);
+    if (window.__wgStartWakeListening) window.__wgStartWakeListening();
+  }
+  function showLogin(){
+    loginScreen.classList.remove('hidden');
+    appRoot.classList.add('app-hidden');
+    const vf = document.getElementById('voiceFab');
+    const vp = document.getElementById('voicePanel');
+    if (vf) vf.style.display = 'none';
+    if (vp) vp.classList.remove('show');
+    if (window.__wgSetWakeToggleVisible) window.__wgSetWakeToggleVisible(false);
+    if (window.__wgStopWakeListening) window.__wgStopWakeListening();
+  }
+
+  let signupMode = false;
+  const loginForm = document.getElementById('loginForm');
+  const loginError = document.getElementById('loginError');
+  const loginSwitchBtn = document.getElementById('loginSwitchBtn');
+  const loginSwitchText = document.getElementById('loginSwitchText');
+  const loginSubmitBtn = document.getElementById('loginSubmitBtn');
+
+  loginSwitchBtn.addEventListener('click', () => {
+    signupMode = !signupMode;
+    loginSubmitBtn.textContent = signupMode ? 'Create account' : 'Log In';
+    loginSwitchText.textContent = signupMode ? 'Already have an account?' : 'New here?';
+    loginSwitchBtn.textContent = signupMode ? 'Log in' : 'Create an account';
+    loginError.classList.remove('show');
+  });
+
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('loginUser').value.trim();
+    const pass = document.getElementById('loginPass').value;
+    loginError.classList.remove('show');
+    if (!name || !pass){
+      loginError.textContent = 'Please fill in both fields.';
+      loginError.classList.add('show');
+      return;
+    }
+    const users = getUsers();
+    if (signupMode){
+      if (users[name]){
+        loginError.textContent = 'That name is already taken — try logging in instead.';
+        loginError.classList.add('show');
+        return;
+      }
+      users[name] = pass;
+      saveUsers(users);
+      setSession(name);
+      saveLastUser(name);
+      showApp(name);
+    } else {
+      if (!users[name] || users[name] !== pass){
+        loginError.textContent = 'Incorrect name or password.';
+        loginError.classList.add('show');
+        return;
+      }
+      setSession(name);
+      saveLastUser(name);
+      showApp(name);
+    }
+  });
+
+  document.getElementById('guestBtn').addEventListener('click', () => {
+    setSession('Guest');
+    showApp('Guest');
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    clearSession();
+    showLogin();
+  });
+
+  // Pre-fill the remembered login ID so returning users don't have to retype it
+  const loginUserField = document.getElementById('loginUser');
+  const rememberedUser = getLastUser();
+  if (rememberedUser && loginUserField){
+    loginUserField.value = rememberedUser;
+  }
+
+  // Restore session on load
+  const existing = getSession();
+  if (existing){ showApp(existing); } else { showLogin(); }
+
+})();
+</script>
+</body>
+</html>
